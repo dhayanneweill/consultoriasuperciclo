@@ -1,0 +1,114 @@
+<?php 
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+include_once 'class.phpmailer.php';
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+
+$place = $_POST['local'];
+
+$placeinfo = $_POST['info'];
+
+$placename = $_POST['name'];
+
+$placehour = $_POST['hour'];
+
+$placedate = $_POST['when'];
+
+$placecost = $_POST['cost'];
+
+$db->begin();
+$placelocal = $db->select("SELECT pla_address, pla_telephone1, pla_telephone2 FROM place WHERE pla_id = '".$place."' AND pla_status = 'Active'");
+$placelocal = $db->get_row($placelocal);
+
+$result1 = $db->insert_sql("INSERT INTO `events` (`eve_name`, `eve_when`, `eve_hour`, `eve_where`, `eve_info`,`eve_phone`,`eve_cellphone`, `acc_id`, `pla_id`, `eve_cost`)
+			VALUES ('".$placename."', '".$placedate."', '".$placehour."', '".$placelocal['pla_address']."', '".$placeinfo."',
+			'".$placelocal['pla_telephone1']."','".$placelocal['pla_telephone2']."', '".$_SESSION['loggeduser']['id']."', '".$place."','".$placecost."');");
+
+$users = Array();			
+$liked = $db->select("SELECT acc_id FROM likeplace WHERE pla_id = '".$place."'");
+while($like = $db->get_row($liked)){
+	$users[] .= $like['acc_id'];
+}
+
+$values = "";
+$i = 0;
+$status = 'no';
+while ($i < sizeof($users)) {
+	if($users[$i] != 0 AND $users[$i] != $_SESSION['loggeduser']['id']){
+		$values.= "('".$result1."','".$users[$i]."','invited'), ";
+		$usermail = $db->select("SELECT acc_email FROM useraccount WHERE acc_id = '".$users[$i]."' ");
+		$usermail = $db->get_row($usermail);
+		$email = $usermail['acc_email'];
+		$info = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$users[$i]."' ");
+		$info = $db->get_row($info);
+		$userowner = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$_SESSION['loggeduser']['id']."'");
+		$userowner = $db->get_row($userowner);
+		
+		
+		$mail = new PHPMailer();
+  
+  		$mail->IsSMTP();
+  		$mail->SMTPSecure = "tls"; // set mailer to use SMTP
+  		$mail->Host = MailHost();  // specify main and backup server
+  		$mail->SMTPAuth = true; // turn on SMTP authentication
+  		$mail->Username = MailUser();  // SMTP username
+  		$mail->Password = MailPasswd(); // SMTP password
+  		$mail->From = "whatoodo@whatoodo.com";
+  		$mail->FromName = "Invite to event";
+  		$mail->AddAddress($email);
+		$mail->IsHTML(true);
+  
+  		$mail->Subject = "Whatoodo party";
+  		$mail->Body    = "<div class='main-container' style='width: 512px; border: 1px solid;'>
+  								<div class='header' style='width: 512px; height: 55px; background-color: purple; '>
+  									<div class='image-logo' style=''>
+  											<img src='http://www.whatoodo.com/images/icons/brand.png'/>
+  									</div>		
+  								</div>
+  								<div class='image-profile' style='float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'>
+  											<img src='http://images.whatoodo.com/images/events/".$eventname['eve_photo']."' style='margin-top: 20px; margin-right: 10px; float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'/>
+  								</div>
+  								<div class='text' style='display: inline-block; margin-left: 20px; margin-top: 20px;'>
+										Hi ".$info['usp_firstname'].' '.$info['usp_lastname']."<br/><br/><br/>
+										 ".$userowner['usp_firstname'].' '.$userowner['usp_lastname']." has invited you to have fun with him at ".$placename."<br/>
+										 Follow the link below to confirm and enjoy it!<br/><br/><br/>
+										 <a href='http://www.whatoodo.com/?page=profileevent&eveid=".$result1."'>Whatoodo Events</a><br/><br/><br/>
+										 
+										 Whatoodo<br/>
+										 Lot's of thing out there!
+										 
+								</div>
+  						</div>";	
+	}
+	$i++;
+}
+$values = substr($values, 0, -2);
+if ($i == 0) { $values = ""; }
+$result2 = $db->insert_sql("INSERT INTO `userevent`(`id_eve`, `acc_id`, `reply_event`) VALUES ".$values.";");
+
+if ($result1) {
+		$db->commit();
+		//die("<script>window.location='?page=profileevent&eveid=64'</script>");
+		die(json_encode(Array("status" => "OK")));
+		//die(json_encode(Array("event" => $result1)));
+} else {
+		$db->rollback();
+		die(json_encode(Array("status" => "ERROR")));
+}
+
+
+	
+	
+?>

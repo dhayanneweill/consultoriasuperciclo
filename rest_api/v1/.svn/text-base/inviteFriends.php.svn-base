@@ -1,0 +1,101 @@
+<?php 
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+include_once 'class.phpmailer.php';
+
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+$friends = $_POST['friends'];
+
+$event = mysql_real_escape_string($POST_eventid);
+
+$eventname = $db->select("SELECT eve_name, eve_photo, eve_id FROM events WHERE eve_id = '".$event."' ");
+$eventname = $db->get_row($eventname);
+
+$values = "";
+$i = 0;
+while ($i < sizeof($friends)) {
+	if($friends[$i] != 0){
+		$values .= "('".$event."','".$friends[$i]."','invited'), ";
+		$usermail = $db->select("SELECT acc_email FROM useraccount WHERE acc_id = '".$friends[$i]."' ");
+		$usermail = $db->get_row($usermail);
+		$email = $usermail['acc_email'];
+		$info = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$friends[$i]."' ");
+		$info = $db->get_row($info);
+		$userowner = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$_SESSION['loggeduser']['id']."'");
+		$userowner = $db->get_row($userowner);
+		
+		
+		$mail = new PHPMailer();
+  
+  		$mail->IsSMTP();
+  		$mail->SMTPSecure = "tls"; // set mailer to use SMTP
+  		$mail->Host = MailHost();  // specify main and backup server
+  		$mail->SMTPAuth = true; // turn on SMTP authentication
+  		$mail->Username = MailUser();  // SMTP username
+  		$mail->Password = MailPasswd(); // SMTP password
+  		$mail->From = "whatoodo@whatoodo.com";
+  		$mail->FromName = "Invite to event";
+		$mail->IsHTML(true);
+  		$mail->AddAddress($email);
+  
+  		$mail->Subject = "Whatoodo party";
+  		$mail->Body    = "<div class='main-container' style='width: 512px; border: 1px solid;'>
+  								<div class='header' style='width: 512px; height: 55px; background-color: purple; '>
+  									<div class='image-logo' style=''>
+  											<img src='http://www.whatoodo.com/images/icons/brand.png'/>
+  									</div>		
+  								</div>
+  								<div class='image-profile' style='float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'>
+  											<img src='http://images.whatoodo.com/images/events/".$eventname['eve_photo']."' style='margin-top: 20px; margin-right: 10px; float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'/>
+  								</div>
+  								<div class='text' style='display: inline-block; margin-left: 20px; margin-top: 20px;'>
+										Hi ".$info['usp_firstname'].' '.$info['usp_lastname']."<br/><br/><br/>
+										 ".$userowner['usp_firstname'].' '.$userowner['usp_lastname']." has invited you to have fun with him at ".$eventname['eve_name']."<br/>
+										 Follow the link below to confirm and enjoy it!<br/><br/><br/>
+										 <a href='http://www.whatoodo.com/?page=profileevent&eveid=".$eventname['eve_id']."'>Whatoodo Events</a><br/><br/><br/>
+										 
+										 Whatoodo<br/>
+										 Lot's of thing out there!
+										 
+								</div>
+  						</div>";
+  		//Hi ".$info['usp_firstname'].' '.$info['usp_lastname']." you was invited to ".$eventname['eve_name'];
+  
+  		if(!$mail->Send()) {
+     		echo "Message could not be sent. <p>";
+     		echo "Mailer Error: " . $mail->ErrorInfo;
+     		exit;
+  		}
+	}
+	$i++;
+}
+$values = substr($values, 0, -2);
+if ($i == 0) { $values = ""; }
+
+$result2 = $db->insert_sql("INSERT INTO `userevent`(`id_eve`, `acc_id`, `reply_event`) VALUES ".$values.";");
+
+if ($result2) {
+		$db->commit();
+		//die("<script>window.location='?page=profileevent&eveid=64'</script>");
+		die(json_encode(Array("status" => $result2)));
+		//die(json_encode(Array("event" => $result1)));
+	} else {
+		$db->rollback();
+		die(json_encode(Array("status" => "ERROR")));
+	}
+
+
+	
+	
+?>

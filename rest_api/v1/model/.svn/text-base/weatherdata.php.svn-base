@@ -1,0 +1,57 @@
+<?php
+class WeatherData {
+	public static function getWeatherData() {
+		include '../config.php';
+		// Validaçào de Parametros
+		if (!isset($_GET['coordinates']))
+			Api::error(400, "Missing coordinates");
+		$coordinates = explode(",", $_GET['coordinates'], 2);
+		$latitude = $coordinates[0];
+		$longitude = $coordinates[1];
+		if (!is_numeric($latitude) || !is_numeric($longitude))
+			Api::error(400, "Invalid Latitude or Longitude");
+		// Weather Processing and Caching
+		if (isset($_SESSION['wheater'])) {
+			if ((time() - $_SESSION['wheater']['timeout']) >= 0)
+				unset($_SESSION['wheater']);
+			else if ($latitude != $_SESSION['wheater']['latitude'] || $longitude != $_SESSION['wheater']['longitude'])
+				unset($_SESSION['wheater']);
+		}
+		if (!isset($_SESSION['wheater'])) {
+			$response = file_get_contents('http://free.worldweatheronline.com/feed/weather.ashx?key=b09a05408b192246101812&q='.$latitude.','.$longitude.'&format=json&num_of_days=1');
+			$weather = json_decode($response, true);
+			if (!isset($weather['data'])) {
+				$weather = json_decode('{ "data": { "current_condition": [ {"cloudcover": "50", "humidity": "66", "observation_time": "08:29 AM", "precipMM": "3.7", "pressure": "1006", "temp_C": "31", "temp_F": "88", "visibility": "10", "weatherCode": "356", "weatherDesc": [ {"value": "Moderate or heavy rain shower" } ], "weatherIconUrl": [ {"value": "http:\/\/www.worldweatheronline.com\/images\/wsymbols01_png_64\/wsymbol_0010_heavy_rain_showers.png" } ], "winddir16Point": "SE", "winddirDegree": "130", "windspeedKmph": "7", "windspeedMiles": "4" } ], "request": [ {"query": "201.75.100.140", "type": "IP" } ], "weather": [ {"date": "2010-12-18", "precipMM": "20.4", "tempMaxC": "29", "tempMaxF": "84", "tempMinC": "22", "tempMinF": "71", "weatherCode": "356", "weatherDesc": [ {"value": "Moderate or heavy rain shower" } ], "weatherIconUrl": [ {"value": "http:\/\/www.worldweatheronline.com\/images\/wsymbols01_png_64\/wsymbol_0010_heavy_rain_showers.png" } ], "winddir16Point": "NE", "winddirDegree": "52", "winddirection": "NE", "windspeedKmph": "4", "windspeedMiles": "2" }, {"date": "2010-12-19", "precipMM": "16.8", "tempMaxC": "30", "tempMaxF": "86", "tempMinC": "23", "tempMinF": "74", "weatherCode": "353", "weatherDesc": [ {"value": "Light rain shower" } ], "weatherIconUrl": [ {"value": "http:\/\/www.worldweatheronline.com\/images\/wsymbols01_png_64\/wsymbol_0009_light_rain_showers.png" } ], "winddir16Point": "NNE", "winddirDegree": "11", "winddirection": "NNE", "windspeedKmph": "6", "windspeedMiles": "4" } ] }}', true);
+			}
+			$time = explode(" ", $weather['data']['current_condition'][0]['observation_time']);
+			if ($time[1] == "PM") {
+				if (substr($time[0], 0, 2) < 6) {
+					$time = "AM";
+				} else {
+					$time = "PM";
+				}
+			} else {
+				if (substr($time[0], 0, 2) < 6) {
+					$time = "PM";
+				} else {
+					$time = "AM";
+				}
+			}
+			$_SESSION['wheater'] = Array();
+			$_SESSION['wheater']['tempC'] = $weather['data']['current_condition'][0]['temp_C'];
+			$_SESSION['wheater']['tempF'] = $weather['data']['current_condition'][0]['temp_F'];
+			$weatherDesc = $weather['data']['current_condition'][0]['weatherDesc'][0]['value'];
+			if (isset($CONFIG_iconset[$weatherDesc][$time])) {
+				$_SESSION['wheater']['iconUrl'] = $CONFIG_image_host . $CONFIG_image_path_weather_icons . $CONFIG_iconset[$weatherDesc][$time];
+			} else {
+				$_SESSION['wheater']['iconUrl'] = str_replace("\\", "", $weather['data']['current_condition'][0]['weatherIconUrl'][0]['value']);
+				$_SESSION['wheater']['notBoundParameter'] = $weatherDesc;
+			}
+			$_SESSION['wheater']['latitude'] = $latitude;
+			$_SESSION['wheater']['longitude'] = $longitude;
+			$_SESSION['wheater']['timeout'] = time() + 10800;
+		}
+		return $_SESSION['wheater'];
+	}
+}
+?>

@@ -1,0 +1,37 @@
+<?php
+//if (!$_SESSION['loggeduser']['id']) {
+//  die("<script>window.location='../?'</script>");
+//}  
+session_start();
+
+include_once 'config.php';
+include_once 'query.php';
+
+$categories = "";
+$maincat = "";
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+	$loggeduser = $_SESSION['loggeduser']['id'];
+$result = $db->select("SELECT element.cat_id, element.cat_name, element.cat_acronym, element.cat_parent, category.cat_id AS parent_id, pre_rating
+FROM (SELECT * FROM category WHERE cat_parent <> '') AS element, category, userpreferences
+WHERE element.cat_parent = category.cat_name AND category.cat_parent = '' AND userpreferences.acc_id = $loggeduser AND element.cat_id = userpreferences.cat_id
+ORDER BY parent_id");
+while ($row = $db->get_row($result)){
+	$categories .='{"id":"'.$row['cat_id'].'","categoryname":"'.$row['cat_name'].'","catparent":"'.$row['parent_id'].'","acronym":"'.$row['cat_acronym'].'","prerating":"'.$row['pre_rating'].'"},';
+}
+$categories = substr($categories,0,-1);
+$result = $db->select("SELECT * FROM category WHERE cat_parent = ''");
+while ($row = $db->get_row($result)){
+	$maincat .='{"id":"'.$row['cat_id'].'","categoryname":"'.$row['cat_name'].'"},';
+}
+$maincat = substr($maincat,0,-1);
+?>
+{
+"categories":[<?php echo $categories; ?>],
+"maincat":[<?php echo $maincat; ?>]
+}

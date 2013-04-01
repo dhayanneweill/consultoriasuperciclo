@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Whatoodo</title>
+<script type="text/javascript" language="javascript" src="script/libs/jquery.js"></script>
+<script type="text/javascript" language="javascript" src="script/libs/lib.js"></script>
+<script type="text/javascript" language="javascript" src="script/libs/utils.js"></script>
+<script type="text/javascript" language="javascript" src="script/libs/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" language="javascript" src="script/libs/jquery-ui-1.8.4.custom.min.js"></script>
+<script type="text/javascript" language="javascript" src="script/libs/jquery.tokeninput.js"></script>
+<script type="text/javascript" language="javascript" src="script/libs/jquery.extras.js"></script>
+<script type="text/javascript" language="javascript" src="script/libs/jquery.quicksearch.js"></script>
+<script type="text/javascript" language="javascript" src="script/libs/dialog.js"></script>
+<script type="text/javascript" language="javascript" src="script/libs/jquery.autocomplete.js"></script>
+<script type="text/javascript" language="javascript" src="script/services/service.js"></script>
+<script type="text/javascript" language="javascript" src="script/services/sessionService.js"></script>
+<script type="text/javascript" language="javascript" src="script/templates/template.js"></script>
+<script type="text/javascript" language="javascript" src="script/i18n.js"></script>
+<script type="text/javascript" language="javascript" src="script/whatoodo.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/loading.js"></script>  
+<script type="text/javascript" language="javascript" src="script/views/home.js"></script> 
+<script type="text/javascript" language="javascript" src="script/views/friends.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/events.js"></script> 
+<script type="text/javascript" language="javascript" src="script/views/search.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/pageprofile.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/editfriends.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/friendsuser.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/addplace.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/addevent.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/placeprofile.js"></script> 
+<script type="text/javascript" language="javascript" src="script/views/register.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/about.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/privacy.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/help.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/addeventPlace.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/placeevents.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/profileevent.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/useaspage.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/preferences.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/changephoto.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/ChangePhotoEvent.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/changeplacephoto.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/placeprofilemin.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/accountsettings.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/editplace.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/recoverypass.js"></script>
+<script type="text/javascript" language="javascript" src="script/views/recoverypasscode.js"></script>
+
+<link rel="stylesheet" href="style/reset.css" type="text/css">
+<link rel="stylesheet" href="style/style.css" type="text/css">
+<link rel="stylesheet" href="style/eggplant/jquery-ui-1.8.4.custom.css" type="text/css">
+</head>
+
+<body>
+<div id="container" class="container">
+<!--Dialog alert -->
+<div class="dialog alert" id="alert">
+  <div>
+    <div class="alert-message" id="alert-message"></div>
+    <div class="alert-buttons" id="alert-buttons"><input type="button" value="Confirm" class="button" id="alert-confirm"></div>
+  </div>
+</div>
+<!-- Dialog Share Place -->
+<div class="dialog" id="share-place">
+    <div class="down">
+        <div class="sides">
+        </div>
+    </div>
+</div>
+<!-- Dialog Invite Friends -->
+<div class="dialog" id="friends-invite">
+	<div class="down">
+        <div class="sides">
+        
+        </div>
+    </div>
+</div>
+<!--Dialog Add Friend -->
+<div class="dialog" id="add-friend-confirm">
+    <div class="down">
+        <div class="sides">
+        
+        </div>
+    </div>
+</div>
+	<div id="header" class="header">
+    	<div class="header-menu">
+    		<div class="user-options-top" id="user-option">
+            </div>
+    		<div class="login-header">
+    			<div class="label-login">Login</div>
+    			<div class="label-username">Username</div>
+    			<input id="text_username" class="input-text" type="text"/>
+    			<div class="label-password">Password</div>
+    			<input id="text_password" class="input-text" type="password"/>
+    			<div class="confirm-button" id="btnLogin"><div class="confirm-label">OK</div></div>
+    		</div>
+    		<div id="btn-joinnow" class="new-member">
+    			<span>New Member? Click Here.</span>
+    		</div>
+        	<div class="location" id="location">
+            	<div></div>
+            </div>
+            <div class="change-city" style="display: none;">
+            	<input type="text" id="change-city-input">
+            </div>            
+        </div>
+        <div class="header-body">
+        	<a id="wtdlogo" href="#" class="logo"></a>
+            <div class="content-header-search">
+            	<input class="header-search" placeholder="&nbsp; WHAT WOULD YOU LIKE TO DO" id="search-input" autocomplete="off"/><a class="btn-header-search" id="btnSearch"></a>
+            	<div id="search-result" class="search-result-container" style="display: none"></div>
+            </div>
+            <a id="addEventBtn" class="event"></a>
+            <a id="addPlace" class="place"></a>
+        </div>
+    </div>
+	<div id="content" class="content">
+		<div id="loading" class="loading" style="display:none;"></div>
+        <div id="home" class="home" style="display:none;"></div>     
+        <div id="profile" class="profile" style="display:none;"></div>
+        <div id="friends" class="friends" style="display:none;"></div>                     
+        <div id="events" class="events" style="display:none;"></div>
+	    <div id="pageprofile" class="pageprofile" style="display:none;"></div>
+	    <div id="editfriends" class="editfriends" style="display:none;"></div>
+	    <div id="friendsuser" class="friendsuser" style="display:none;"></div>    
+        <div id="search" class="search" style="display:none;"></div>
+        <div id="addplace" class="addplace" style="display:none;"></div>
+        <div id="addevent" class="addevent" style="display:none;"></div>
+        <div id="placeprofile" class="placeprofile" style="display:none;"></div>  
+        <div id="register" class="register" style="display:none;"></div>
+        <div id="about" class="about" style="display:none;"></div>
+        <div id="privacy" class="privacy" style="display:none;"></div>
+        <div id="help" class="help" style="display:none;"></div>
+        <div id="addeventPlace" class="addeventPlace" style="display:none;"></div>
+        <div id="placeevents" class="placeevents" style="display:none;"></div>
+        <div id="profileevent" class="profileevent" style="display:none;"></div>
+        <div id="useaspage" class="useaspage" style="display:none;"></div>  
+        <div id="preferences" class="preferences" style="display:none;"></div>
+        <div id="changephoto" class="changephoto" style="display:none;"></div>
+        <div id="ChangePhotoEvent" class="ChangePhotoEvent" style="display:none;"></div>
+        <div id="changeplacephoto" class="changeplacephoto" style="display:none;"></div>
+        <div id="placeprofilemin" class="placeprofilemin" style="display:none;"></div>
+        <div id="accountsettings" class="accountsettings" style="display:none;"></div>
+        <div id="editplace" class="editplace" style="display:none;"></div>
+        <div id="recoverypass" class="recoverypass" style="display:none;"></div>
+        <div id="recoverypasscode" class="recoverypasscode" style="display:none;"></div>  
+    </div>
+   
+	<div id="footer" class="footer" style="text-align:center;">
+    	<a>Developers</a> <a href="index.php?page=about">About</a> <a>Advertising</a> <a href="index.php?page=privacy">Privacy</a> <a href="index.php?page=help">Help</a> <a href="http://whatoodo.uservoice.com">Feedback</a>
+    </div>        
+</div>
+</body>
+</html>

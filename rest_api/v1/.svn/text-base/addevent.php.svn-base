@@ -1,0 +1,115 @@
+<?php		  
+
+//$data = $POST_data;
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+include_once 'class.phpmailer.php';
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+        $db->print_last_error();
+}
+if (!$db->select_db()){
+        die("Banco de dados não encontrado!");
+}
+
+$when = $_POST['when'];
+$hour = $_POST['hour'];
+$name = $_POST['name'];
+$local = $_POST['local'];
+$who = $_POST['who'];
+$info = $_POST['info'];
+$phone = $_POST['phone'];
+$date = date("Y-m-d");
+
+$where = substr($local,0,-1);
+
+$db->begin();
+$localid = $db->select("SELECT * FROM place WHERE pla_id = '".$where."'");
+$localid = $db->get_row($localid);
+if($localid){
+	$result1 = $db->insert_sql("INSERT INTO `events` (`eve_name`, `eve_when`, `eve_hour`, `eve_where`, `eve_info`,`eve_phone`, `acc_id`)
+	VALUES ('".$name."', '".$when."', '".$hour."', '".$localid['pla_name']." - ".$localid['pla_address']."', '".$info."','".$phone."','".$_SESSION['loggeduser']['id']."');");
+}else{
+	$result1 = $db->insert_sql("INSERT INTO `events` (`eve_name`, `eve_when`, `eve_hour`, `eve_where`, `eve_info`,`eve_phone`, `acc_id`)
+	VALUES ('".$name."', '".$when."', '".$hour."', '".$local."', '".$info."','".$phone."','".$_SESSION['loggeduser']['id']."');");
+}
+$result = $db->insert_sql("INSERT INTO `userevent` (`id_eve`, `acc_id`, `reply_event`, `date`) VALUE ('".$result1."','".$_SESSION['loggeduser']['id']."','yes','".$date."')");
+
+$division = explode(",",$who);
+
+$values = "";
+$i = 0;
+$status = 'no';
+while ($i < sizeof($division)) {
+	if($division[$i] != 0){
+		$values.= "('".$result1."','".$division[$i]."','invited'), ";
+		$usermail = $db->select("SELECT acc_email FROM useraccount WHERE acc_id = '".$division[$i]."' ");
+		$usermail = $db->get_row($usermail);
+		$email = $usermail['acc_email'];
+		$info = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$division[$i]."' ");
+		$info = $db->get_row($info);
+		$userowner = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$_SESSION['loggeduser']['id']."'");
+		$userowner = $db->get_row($userowner);
+		
+		
+		$mail = new PHPMailer();
+  
+  		$mail->IsSMTP();
+  		$mail->SMTPSecure = "tls"; // set mailer to use SMTP
+  		$mail->Host = MailHost();  // specify main and backup server
+  		$mail->SMTPAuth = true; // turn on SMTP authentication
+  		$mail->Username = MailUser();  // SMTP username
+  		$mail->Password = MailPasswd(); // SMTP password
+  		$mail->From = "whatoodo@whatoodo.com";
+  		$mail->FromName = "Invite to event";
+  		$mail->AddAddress($email);
+		$mail->IsHTML(true);
+  
+  		$mail->Subject = "Whatoodo party";
+  		$mail->Body    = "<div class='main-container' style='width: 512px; border: 1px solid;'>
+  								<div class='header' style='width: 512px; height: 55px; background-color: purple; '>
+  									<div class='image-logo' style=''>
+  											<img src='http://www.whatoodo.com/images/icons/brand.png'/>
+  									</div>		
+  								</div>
+  								<div class='image-profile' style='float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'>
+  											<img src='http://images.whatoodo.com/images/events/".$eventname['eve_photo']."' style='margin-top: 20px; margin-right: 10px; float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'/>
+  								</div>
+  								<div class='text' style='display: inline-block; margin-left: 20px; margin-top: 20px;'>
+										Hi ".$info['usp_firstname'].' '.$info['usp_lastname']."<br/><br/><br/>
+										 ".$userowner['usp_firstname'].' '.$userowner['usp_lastname']." has invited you to have fun with him at ".$name."<br/>
+										 Follow the link below to confirm and enjoy it!<br/><br/><br/>
+										 <a href='http://www.whatoodo.com/'>Whatoodo Events</a><br/><br/><br/>
+										 
+										 Whatoodo<br/>
+										 Lot's of thing out there!
+										 
+								</div>
+  						</div>";
+  
+  		if(!$mail->Send()) {
+     		echo "Message could not be sent. <p>";
+     		echo "Mailer Error: " . $mail->ErrorInfo;
+     		exit;
+  			}
+		}
+	$i++;
+	}
+$values = substr($values, 0, -2);
+if ($i == 0) { $values = ""; }
+
+$result2 = $db->insert_sql("INSERT INTO `userevent`(`id_eve`, `acc_id`, `reply_event`) VALUES ".$values.";");
+
+if ($result1) {
+	$db->commit();
+	die(json_encode(Array("status" => $result1)));
+} else {
+	$db->rollback();
+	die(json_encode(Array("status" => "ERROR")));
+}
+
+?>

@@ -1,0 +1,360 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.register = {
+	tabs : ["mandatory-form", "preferences-form"],
+	validUsername : false,
+	validEmail : false,
+	validTwitter : false,
+	init : function() {
+		document.getElementById('register').innerHTML = template.componentLoading;
+		service.getRegister(function(data) {
+			whatoodo.register.render(data);
+			var element = $('#left-categories :first-child');
+			var name = $('#left-categories :first-child').attr('id');
+			whatoodo.register.selectCategory(element, name);
+			whatoodo.register.bind();
+		}, function() {
+			wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+		});
+		$("#form-register").validate();
+		
+	},
+	bind : function() {
+		//alert("Teste");
+		//start click handler
+		$('.rating').each(function() {
+			$(this).ratings(5).bind('ratingchanged', function(event, data) {
+				$(this).attr("rate", data.rating);
+				//Implementar inclusão.
+			});
+		});
+		$('#left-categories').children().click(function() {
+			var element = this;
+			var name = this.id;
+			whatoodo.register.selectCategory(element, name);
+		});
+		$('#btn-continue-1').click(function() {
+			if(!$("#form-register").valid() || whatoodo.register.validUsername == false || whatoodo.register.validEmail == false) {
+				return;
+			}
+			$('#menu-register').children().addClass('tab');
+			$('#menu-register').children().removeClass('tab-active');
+
+			var next = this.id.split("-")[2];
+			next++;
+
+			for(var j = 0; j < whatoodo.register.tabs.length; j++) {
+				if(next == (j + 1)) {
+					$('#view-' + whatoodo.register.tabs[j]).fadeIn('slow');
+					$('#menu-' + next).addClass('tab-active');
+				} else {
+					$('#view-' + whatoodo.register.tabs[j]).hide();
+				}
+			}
+		});
+		$("#reg-username").blur(function() {
+			if($("#reg-username").valid()) {
+				whatoodo.register.validateUsername();
+			}
+		});
+		$("#reg-email").blur(function() {
+			if($("#reg-email").valid()) {
+				whatoodo.register.validateEmail();
+			}
+		});
+		$('#finish').click(function() {
+			if(!$("#form-register").valid()) {
+				window.location.reload();
+				return;
+			}
+			whatoodo.register.finishRegistration();
+		});
+		$('.rating').click(function() {
+			var assoc = $(this).attr('labelid');
+			var element = $('#label-' + assoc);
+			$(element).show();
+		});
+	},
+	render : function(data) {
+		console.log(whatoodo.location.countrycode);
+		//var _template = template.teste;
+		//alert('TEste1');
+		var registerform = "";
+		var countryoptions = "";
+		var elements = "";
+		var maincat = "";
+		var ratingcat = "";
+
+		//alert(data['countries'].length);
+		//var x = 0;
+
+		//for(x = 0; x < 1; x++){
+		registerform += template.formRegister.replace("{LOGIN}","Login")
+		.replace("{USERNAME}","Username")
+		.replace("{PASSWORD}","Password")
+		.replace("{RE-ENTER YOUR PASSWORD}","Re-enter your Password")
+		.replace("{FIRST NAME}","First Name")
+		.replace("{LAST NAME}","Last Name")
+		.replace("{GENDER}","Gender")
+		.replace("{SELECT GENDER}","Select Gender")
+		.replace("{MALE}","Male")
+		.replace("{FEMALE}","Female")
+		.replace("{E-MAIL}","E-mail")
+		.replace("{COUNTRY YOU LIVE IN}","Country you live in")
+		.replace("{CITY YOU LIVE IN}","City you live in")
+		.replace("{DATE OF BIRTH}","Date of Birth")
+		.replace("{TERMS AND CONDITIONS}","Terms and Conditions")
+		.replace("{I have read and agree to the}","I have read and agree to the")
+		.replace("{WHATOODO SERVICE TERMS}","WHATOODO SERVICE TERMS")
+		.replace("{AND THE}", "and the")
+		.replace("{PRIVACY POLICY}","PRIVACY POLICY")
+		.replace("{CATEGORY}","Category1")
+		.replace("{CATEGORY}","Category2")
+		.replace("{CATEGORY}","Category3")
+		.replace("{ACRONYM}","Ac")
+		.replace("{SUBCATEGORY}","Subcategory1")
+		.replace("{CATEGORY}","Category4")
+		.replace("{CATEGORY}","Category5")
+		.replace("{SUBCATEGORY}", "SubCategory2");
+		document.getElementById('register').innerHTML = registerform;
+		for( i = 0; i < data['countries'].length; i++) {
+			countryoptions += '<option value="' + data['countries'][i]['iso'] + '"';
+			if(data['countries'][i]['iso'] == whatoodo.location.countrycode){
+				countryoptions += 'selected="selected"';
+			}
+			countryoptions += '>' + data['countries'][i]['countryname'] + '</option>';
+		}
+		document.getElementById('reg-country').innerHTML = countryoptions;
+		for( i = 0; i < data['maincat'].length; i++) {
+			maincat += '<p id=l-' + data['maincat'][i]['id'] + '><img src="style/img/categories/' + data['maincat'][i]['categoryname'].toLowerCase() + '_TH.png" />' + data['maincat'][i]['categoryname'] + '</p>';
+		}
+		document.getElementById('left-categories').innerHTML = maincat;
+		for( i = 0; i < data['maincat'].length; i++) {
+			var cellcounter = 0;
+			for( j = 0; j < data['categories'].length; j++) {
+				if(data['maincat'][i]['id'] == data['categories'][j]['catparent']) {
+					if(cellcounter % 10 == 0 && cellcounter > 0) {
+						elements += "</tr><tr>";
+					}
+					elements += '<td id="parent-' + data['maincat'][i]['id'] + '" class="column"><div id="element-' + data['categories'][j]['id'] + '" class="element"><h1>' + data['categories'][j]['acronym'] + '</h1>' + data['categories'][j]['categoryname'] + '</div></td>';
+					cellcounter++;
+				}
+			}
+			elements += "</tr>";
+		}
+		document.getElementById('elements-table').innerHTML = elements;
+		for( i = 0; i < data['maincat'].length; i++) {
+			var cellcounter = 0;
+			ratingcat += '<div id="d-' + data['maincat'][i]['id'] + '" class="col"><h2>' + data['maincat'][i]['categoryname'] + '</h2></br>' + '<table id="category-rating-table" class="rating-table"><tr class="row">';
+			for( j = 0; j < data['categories'].length; j++) {
+				if(data['maincat'][i]['id'] == data['categories'][j]['catparent']) {
+					if(cellcounter % 3 == 0 && cellcounter > 0) {
+						ratingcat += '</tr><tr class="row">';
+					}
+					ratingcat += '<td class="cell"><div class="stars"><p>' + data['categories'][j]['categoryname'] + '</p>' + '<span rate="0" class="rating" parent="'+data['maincat'][i]['id']+'" id="rating-' + data['categories'][j]['id'] + '" labelid="' + data['categories'][j]['id'] + '" style="float: right" ></span>' + '</div></td>';
+					cellcounter++;
+				}
+			}
+			ratingcat += '</tr></table></div>';
+		}
+		ratingcat += '</tr>';
+		document.getElementById('category-rating-container').innerHTML = ratingcat;
+
+		$('#reg-birthdate').datepicker({
+			dateFormat : 'yy/mm/dd',
+			yearRange : '-100:-18',
+			changeMonth : true,
+			changeYear : true,
+			defaultDate : '-18y'
+		});
+	},
+	selectCategory : function(element, name) {
+		var name = name.split("-")[1];
+
+		$('.left-categories').children().removeClass('selected');
+		$(element).addClass('selected');
+
+		//Color the table
+		$('.column').each(function() {
+			if(this.id.split("-")[1] == name) {
+
+				$(this).children().css('background-image', 'url(style/img/categories/inactive_TP.png)');
+				$(this).parent().css('display', '');
+			} else {
+				$(this).parent().css('display', 'none');
+
+			}
+		});
+		//Show/Hide the stars.
+		$('#category-rating-container').children().each(function() {
+			if(this.id.split("-")[1] == name || this.id == "down-title") {
+				$(this).css('display', 'table-row');
+			} else {
+				$(this).css('display', 'none');
+			}
+		});
+	},
+	validateUsername : function() {
+		if($('#reg-username').val() == "") {
+			$('#reg-username ~ label').remove();
+			whatoodo.register.validUsername = false;
+			return false;
+		}
+		//Ajusta os dados e a conexão
+		var regdata = {
+			type : 1,
+			username : $('#reg-username').val()
+		};
+		var params = {
+			url : service.getBaseUrl() + "verifyregister.php",
+			global : false,
+			type : "POST",
+			data : {
+				data : regdata
+			},
+			dataType : "text",
+			async : true,
+			success : function(response) {
+				if(response == "OK") {
+					$('label[for="reg-username"]').addClass('valid');
+					$('label[for="reg-username"]').removeClass('invalid');
+					$('label[for="reg-username"]').text('Valid username!');
+					$('label[for="reg-username"]').show();
+					whatoodo.register.validUsername = true;
+					return true;
+				} else if(response == "ALREADYEXISTS") {
+					$('label[for="reg-username"]').addClass('invalid');
+					$('label[for="reg-username"]').removeClass('valid');
+					$('label[for="reg-username"]').text('This username already exists! You must choose another one.');
+					$('label[for="reg-username"]').show();
+					whatoodo.register.validUsername = false;
+					return false;
+				} else {
+					$('label[for="reg-username"]').addClass('invalid');
+					$('label[for="reg-username"]').removeClass('valid');
+					$('label[for="reg-username"]').text('No connection to the database.');
+					$('label[for="reg-username"]').show();
+					whatoodo.register.validUsername = false;
+					return false;
+				}
+			},
+			error : function(params) {
+				$('label[for="reg-username"]').addClass('invalid');
+				$('label[for="reg-username"]').removeClass('valid');
+				$('label[for="reg-username"]').text('No connection with the server.');
+				$('label[for="reg-username"]').show();
+				wtd.view.validUsername = false;
+				return false;
+			}
+		};
+		//Envia a requisição
+		$.ajax(params);
+	},
+	validateEmail : function() {
+		if($('#reg-email').val() == "") {
+			$('#reg-email ~ label').remove();
+			wtd.view.validEmail = false;
+			return false;
+		}
+		var params = {
+			url : service.getBaseUrl() + "verifyemail.php",
+			global : false,
+			type : "POST",
+			data : {
+				email : $('#reg-email').val()
+			},
+			dataType : "json",
+			async : true,
+			success : function(data) {
+				if(data.status == "OK") {
+					$('label[for="reg-email"]').addClass('valid').removeClass('invalid').text('Valid email!').show();
+					whatoodo.register.validEmail = true;
+					return true;
+				} else if(data.status == "ALREADYTAKEN") {
+					$('label[for="reg-email"]').addClass('invalid').removeClass('valid').text('This email is already taken! You must choose another one.').show();
+					whatoodo.register.validEmail = false;
+					return false;
+				} else {
+					$('label[for="reg-email"]').addClass('invalid').removeClass('valid').text('No connection to the database.').show();
+					whatoodo.register.validEmail = false;
+					return false;
+				}
+			},
+			error : function() {
+				$('label[for="reg-email"]').addClass('invalid').removeClass('valid').text('No connection with the server.').show();
+				whatoodo.register.validEmail = false;
+				return false;
+			}
+		};
+		//Envia a requisição
+		$.ajax(params);
+	},
+	finishRegistration : function() {
+		var preferences = new Array();
+		$('.rating').each(function() {
+			//var stars = new Array();
+			preferences.push({
+				parent : $(this).attr('parent'),
+				categoryid : this.id.split("-")[1],
+				rating : $(this).attr('rate')
+			});
+		});
+		var registerdata = {
+			type : 2,
+			username : $('#reg-username').val(),
+			password : sha1($('#reg-password').val()),
+			firstname : $('#reg-firstname').val(),
+			lastname : $('#reg-lastname').val(),
+			gender : $('#reg-gender').val(),
+			email : $('#reg-email').val(),
+			twitter : $('#reg-twitter').val(),
+			country : $('#reg-country').val(),
+			city : $('#reg-city').val(),
+			birthdate : $('#reg-birthdate').val(),
+			preferences : preferences
+		}, params = {
+			url : service.getBaseUrl() + "verifyregister.php",
+			global : false,
+			type : "POST",
+			data : {
+				data : registerdata
+			},
+			dataType : "text",
+			async : false,
+			success: function(msg) {
+                    //TODO Handler "OK" or "ERROR"
+                    if (msg == "OK")
+                        wtd.alert.showMessage("Registration done! An email was sent to you, please confirm it.", {
+                            timeout: 10000,
+                            callback: function() {
+                                window.location = 'index.php';
+                            }
+                        });
+                    else if (msg == "ERROR")
+                        wtd.alert.showMessage("One or more fields are invalid! Please, verify them and try again.", {
+                            callback: function() {
+                                window.refresh;
+                            }
+                        });
+                    else
+                        wtd.alert.showMessage("We got an internal service error, please try again later.", {
+                            callback: function() {
+                                window.refresh;
+                            }
+                        });
+                },
+			error: function(data) {
+                    wtd.alert.showMessage("We got an internal server error, please try again later.", {
+                        callback: function() {
+                            window.refresh;
+                        }
+                    });
+                }
+		};
+		//Envia a requisição
+		$.ajax(params);
+	},
+	destroy : function() {
+	}
+};
+window.whatoodo = whatoodo;

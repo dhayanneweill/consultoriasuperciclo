@@ -1,0 +1,395 @@
+window.onload = function() {
+
+	lib.url.getVar();
+	whatoodo.setTranslate();
+
+	whatoodo.loading.init();
+	whatoodo.init();
+};
+var whatoodo = window.whatoodo || {};
+whatoodo = {
+	pageList : ['home', 'profile', 'friends', 'events', 'searchs', 'pageprofile', 'editfriends', 'friendsuser', 'addplace', 'addevent', 'placeprofile', 'about', 'privacy', 'help', 'register', 'addeventPlace', 'placeevents', 'profileevent', 'useaspage', 'preferences', 'changephoto', 'ChangePhotoEvent', 'changeplacephoto', 'placeprofilemin', 'accountsettings', 'editplace', 'recoverypass','recoverypasscode'],
+	lang : '',
+
+	init : function() {
+		// Recupera Cookies
+		whatoodo.user = lib.browser.getCookie("UID") != 'undefined' ? JSON.parse(lib.browser.getCookie("UID")) : null;
+		whatoodo.location = JSON.parse(lib.browser.getCookie("locationData"));
+
+		whatoodo.recovery = lib.browser.getCookie("RECV") != 'undefined' ? JSON.parse(lib.browser.getCookie("RECV")) : null;
+		whatoodo.location = JSON.parse(lib.browser.getCookie("locationData"));
+		//Trata Cookies
+		if( typeof (whatoodo.user) == 'undefined')
+			whatoodo.user = null;
+		if(whatoodo.user != null && whatoodo.user != 'undefined'){
+			whatoodo.setupUser();
+			$('.login-header').hide();
+			$('.new-member').hide();
+		}
+			
+		if( typeof (whatoodo.location) == 'undefined' || whatoodo.location == null || whatoodo.location.latitude == null || whatoodo.location.longitude == null) {
+			lib.views.showLoading();
+			service.getLocationData(function(data) {
+				lib.views.hideLoading();
+				whatoodo.location = data.results.items[0];
+				lib.browser.setCookie("locationData", JSON.stringify(data.results.items[0]), "", "", "", "");
+				whatoodo.renderCity();
+				whatoodo.getPage(GET["page"]);
+			}, function() {
+				lib.views.hideLoading();
+				whatoodo.location = null;
+				wtd.alert.showMessage("There was a problem while getting your location. Please set it manually.");
+			});
+		} else {
+			whatoodo.renderCity();
+			whatoodo.getPage(GET["page"]);
+		}
+
+		whatoodo.bind();
+	},
+	bind : function() {
+		
+		$('#wtdlogo').click(function() {
+			if(lib.views.getCurrentView().viewId != 'home')
+				lib.views.set('home', {}, whatoodo);
+		});
+		$('#addEventBtn').click(function() {
+			if(whatoodo.user == null)
+				wtd.alert.showMessage("You need to be authenticated to access this feature!");
+			else
+				window.location = 'index.php?page=addevent';
+			//lib.views.set('addevent', {}, whatoodo);
+		});
+		$('#addPlace').click(function() {
+			if(whatoodo.user == null)
+				wtd.alert.showMessage("You need to be authenticated to access this feature!");
+			else
+				// window.location = 'index.php?page=addplace';
+				lib.views.set('addplace', {}, whatoodo);
+		});
+		whatoodo.bindSearch();
+		whatoodo.bind = function() {
+		};
+	},
+	bindSearch : function() {
+		lib.events.add("btnSearch", "onclick", function(e) {
+			whatoodo.presearch.startSearch();
+		});
+		var KEY = {
+			BACKSPACE : 8,
+			TAB : 9,
+			RETURN : 13,
+			ESC : 27,
+			LEFT : 37,
+			UP : 38,
+			RIGHT : 39,
+			DOWN : 40,
+			COMMA : 188
+		};
+		$('#search-input').keydown(function(event) {
+			if(event.keyCode == KEY.RETURN) {
+				if(whatoodo.presearch.hover > -1 && whatoodo.presearch.hover <= whatoodo.presearch.maxResult) {
+					$('#search-result-' + whatoodo.presearch.hover).click();
+					event.cancelBubble = true;
+					event.returnValue = false;
+					return false;
+				}
+				whatoodo.presearch.startSearch();
+			}
+			if(event.keyCode == KEY.TAB) {
+				if($('#search-result').is(':visible')) {
+					whatoodo.presearch.hover++;
+					if(whatoodo.presearch.hover > whatoodo.presearch.maxResult) {
+						whatoodo.presearch.hover = -1;
+					}
+					whatoodo.presearch.hoverResult(whatoodo.presearch.hover);
+					return false;
+				}
+			}
+		}).keyup(function(event) {
+			switch(event.keyCode) {
+				case KEY.LEFT:
+				case KEY.RIGHT:
+					break;
+
+				case KEY.UP:
+					whatoodo.presearch.hover--;
+					if(whatoodo.presearch.hover < -1) {
+						whatoodo.presearch.hover = whatoodo.presearch.maxResult;
+					}
+					whatoodo.presearch.hoverResult(whatoodo.presearch.hover);
+					break;
+
+				case KEY.DOWN:
+					whatoodo.presearch.hover++;
+					if(whatoodo.presearch.hover > whatoodo.presearch.maxResult) {
+						whatoodo.presearch.hover = -1;
+					}
+					whatoodo.presearch.hoverResult(whatoodo.presearch.hover);
+					break;
+
+				case KEY.TAB:
+				case KEY.RETURN:
+				case KEY.COMMA:
+					break;
+
+				default:
+					if($(this).val() == "")
+						$('#search-result').hide();
+					else {
+						if($(this).val() != whatoodo.presearch.lastQuery) {
+							whatoodo.presearch.lastQuery = $(this).val();
+							whatoodo.presearch.perform($(this).val());
+						}
+					}
+					break;
+			}
+		}).blur(function() {
+			$('#search-result').hide(100);
+		}).focus(function() {
+			if($(this).val() != "" && $(this).val() != $(this).attr('placeholder'))
+				$('#search-result').show();
+		});
+	},
+	presearch : {
+		maxResult : 0,
+		hover : -1,
+		show : true,
+		startSearch : function() {
+			$('#search-result').hide();
+			if(lib.views.getCurrentView().viewId != 'search') {
+				whatoodo.presearch.show = false;
+				$.doTimeout('searchTimer');
+				var value = document.getElementById('search-input').value;
+				if (value == "" || typeof(value) == "undefined" || value == null)
+					return;
+				lib.views.set('search', {
+					'value' : value
+				}, whatoodo);
+			}
+		},
+		hoverResult : function(i) {
+			$('#search-result').children().removeClass('active');
+			$('#search-result-' + i).addClass('active');
+			whatoodo.presearch.hover = i;
+		},
+		perform : function(value) {
+			whatoodo.presearch.show = true;
+			$.doTimeout('searchTimer', 500, function() {
+				if(lib.views.getCurrentView().viewId == 'search') {
+					whatoodo.search.getSearch(value, 0);
+					return;
+				}
+				service.search(value, 0, function(data) {
+					items = data.results.items;
+					var html = "";
+					for(var i = 0; i < items.length && i < 9; i++)
+					html += '<div id="search-result-' + i + '" class="search-result"><div class="result-photo"><img src="' + items[i].image + '" /></div><div class="result-info"><h1>' + items[i].name + '</h1><h2>' + items[i].description + '</h2><h3>' + items[i].city + '</h3></div></div></a>';
+					whatoodo.presearch.maxResult = i;
+					html += '<div id="search-result-' + whatoodo.presearch.maxResult + '" class="search-seemore">See more results</div>';
+					$('#search-result').html(html);
+					$('.search-result').click(function() {
+						// TODO
+						// window.location = $(this).attr('link');
+					});
+					$('#search-result-' + whatoodo.presearch.maxResult).click(function() {
+						whatoodo.presearch.startSearch();
+					});
+					if(whatoodo.presearch.show)
+						$('#search-result').show();
+					$('.search-result,.search-seemore').mouseover(function() {
+						whatoodo.presearch.hoverResult($(this).attr("id").split("-")[2]);
+					});
+					whatoodo.presearch.hoverResult(0);
+				});
+			});
+		}
+	},
+	renderCity : function() {
+		$('#change-city-input').autocomplete([{
+			city : "Manaus",
+			regionName : "Amazonas",
+			countryCode : "BR",
+			countryName : "Brazil",
+			latitude : -3.1064093,
+			longitude : -60.0264297
+		}, {
+			city : "Rio de Janeiro",
+			regionName : "Rio de Janeiro",
+			countryCode : "BR",
+			countryName : "Brazil",
+			latitude : -22.9035393,
+			longitude : -43.2095869
+		}, {
+			city : "São Paulo",
+			regionName : "São Paulo",
+			countryCode : "BR",
+			countryName : "Brazil",
+			latitude : -23.5489433,
+			longitude : -46.6388182
+		}, {
+			city : "New York",
+			regionName : "New York",
+			countryCode : "US",
+			countryName : "United States",
+			latitude : 40.7143528,
+			longitude : -74.0059731
+		}], {
+			minChars : 1,
+			matchContains : "word",
+			autoFill : false,
+			formatItem : function(row, i, max) {
+				return row.city + " [" + row.regionName + "]";
+			},
+			formatMatch : function(row, i, max) {
+				return row.city + " " + row.regionName;
+			},
+			formatResult : function(row) {
+				return row.city;
+			}
+		});
+
+		whatoodo.showCity();
+		$('#change-city-input').result(function(event, data, formatted) {
+			whatoodo.location.city = data.city;
+			whatoodo.location.regionName = data.regionName;
+			whatoodo.location.countryCode = data.countryCode;
+			whatoodo.location.countryName = data.countryName;
+			whatoodo.location.latitude = data.latitude;
+			whatoodo.location.longitude = data.longitude;
+			$('.change-city').hide();
+			$('#location').children().html("<img src='style/img/loaders/2.gif' />");
+			service.getWeatherData(function(data) {
+				whatoodo.location.weather = data.results.items[0];
+				lib.browser.setCookie("locationData", JSON.stringify(whatoodo.location), "", "", "", "");
+				whatoodo.showCity();
+			}, function() {
+				whatoodo.location.weather.tempC = "??";
+				whatoodo.location.weather.iconUrl = "http://www.ohio-registered-agents.com/images/siteskin/interrogation_icon.png";
+				whatoodo.showCity();
+				history.go(0);
+			});
+		});
+	},
+	showCity : function() {
+		$('#location').children().html("<div class='temp'>" + whatoodo.location.weather.tempC + "&deg;</div>" + "<div class='tempo'><img src='" + whatoodo.location.weather.iconUrl + "' /></div>" + "<div class='city'>" + whatoodo.location.city + "</div>");
+
+		$('.city').click(function() {
+			$('.change-city').show().focus();
+		});
+		$('#change-city-input').blur(function() {
+			$('.change-city').hide();
+		});
+	},
+	getPage : function(page) {
+		if(page != undefined && lib.browser.getCookie("UID") != undefined) {
+
+			var regex = new RegExp(page);
+
+			if(regex.test(whatoodo.pageList)) {
+				lib.views.set(page, {}, whatoodo);
+			} else {
+				location.href = 'erro.php';
+			}
+
+		} else if(page != undefined && lib.browser.getCookie("UID") == undefined) {
+			var regex = new RegExp(page);
+
+			if(regex.test(whatoodo.pageList)) {
+				lib.views.set(page, {}, whatoodo);
+			} else {
+				location.href = 'erro.php';
+			}
+		} else {
+			lib.views.set('home', {}, whatoodo);
+		}
+	},
+	setTranslate : function(temp) {
+		if( typeof (temp) == "undefined") {
+			whatoodo.lang = lib.browser.getTranslate();
+		} else {
+			whatoodo.lang = temp;
+		}
+	},
+	setupUser : function() {
+		if(whatoodo.user != null) {
+			$('#user-option').html("<div class='img'>" + "<img src='" + whatoodo.user.photo + "' />" + "</div>" + "<a href='javascript:void(0)' id='menu-settings-link' class='nav-item'>" + "<div class='name'> Welcome, " + whatoodo.user.name + ". Not you? Please, <div class='logout' id='menu-logout' href='#'>Click Here.</a></div>" + "</a>" + "<div id='menu-settings'>" + "<a href='index.php?page=accountsettings'><div>Account Settings</div></a>" + "<a href='index.php?page=useaspage'><div>User WTD as Page</div></a>" + "<a href='index.php?page=changephoto'><div>Change Picture</div></a>" + "<a href='?page=preferences'><div>Preferences</div></a>" + "<a id='menu-logout' href='#'><div>Logout</div></a>" + "</div>");
+			$('#menu-settings-link').unbind('click').click(function() {
+				$('#menu-settings').fadeIn(1, function() {
+					$('body').unbind('click').click(function() {
+						$('#menu-settings').hide();
+						$('body').unbind('click');
+					});
+				});
+			});
+			$('#menu-logout').click(function() {
+				whatoodo.logout();
+			});
+		} else {
+			$('#user-option').html("");
+		}
+	},
+	login : function(user, pass) {
+		var params = {
+			url : service.getBaseUrl() + "login.php",
+			global : false,
+			type : "POST",
+			data : {
+				login : document.getElementById('text_username').value,
+				senha : sha1(document.getElementById('text_password').value)
+
+			},
+			dataType : "json",
+			async : false,
+			success : function(data) {
+				var sessao = data.results.items[0];
+				whatoodo.user = sessao;
+				lib.browser.setCookie("UID", JSON.stringify(sessao), "", "", "", "");
+				window.location = 'index.php'
+			},
+			error : function(data) {
+				alert('Wrong User');
+			}
+		};
+		$.ajax(params);
+	},
+	recoverypwd : function(email){
+		var params = {
+			url : service.getBaseUrl() + "recovery.php",
+			global : false,
+			type : "POST",
+			data : {
+				email : document.getElementById('text_recovery').value
+
+			},
+			dataType : "json",
+			async : false,
+			success : function(data) {
+				var recovery = data.results.items[0];
+				whatoodo.recovery = recovery;
+				lib.browser.setCookie("RECV", JSON.stringify(recovery), "", "", "", "");
+				lib.views.set('recoverypass', {}, whatoodo);
+			},
+			error : function(data) {
+				wtd.alert.showMessage("Wrong Email");
+				lib.views.set('home', {}, whatoodo);
+				alert('Failed to send your request. Try again later.');
+			}
+		};
+		$.ajax(params);
+	},
+	logout : function() {
+		sessionService.getLogout(function(data) {
+			if(data.status.code == 200) {
+				if(lib.browser.getCookie("UID") != 'undefined') {
+					// alert(lib.browser.getCookie("UID"));
+					lib.browser.deleteCookie("UID", "", "");
+				}
+				lib.views.set('home', {}, whatoodo);
+				whatoodo.user = null;
+				whatoodo.setupUser();
+			}
+		});
+	}
+};
+window.whatoodo = whatoodo;

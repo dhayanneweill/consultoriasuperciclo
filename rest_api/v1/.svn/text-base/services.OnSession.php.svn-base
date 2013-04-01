@@ -1,0 +1,2073 @@
+<?php
+header('Content-Type: text/json; charset=UTF-8');
+//Raw protection
+if (!$GET_service || $GET_service != "acceptRequest") {
+	die("<script>window.location='../?'</script>");
+}
+//Gets message data and verifies if the user can read this message
+if (!isset($_SESSION['loggeduser']['id'])) {
+  die("<script>window.location='./?'</script>");
+}
+
+if ($POST_accid == "") {
+  die(json_encode(Array("status" => "ERROR", "errormsg" => "No request to accept." )));
+}
+$accid = mysql_real_escape_string($POST_accid);
+if (!$db->select_one("SELECT usf_id FROM userfriends WHERE acc_id = $accid AND usf_id = ".$_SESSION['loggeduser']['id'].' AND usf_status = "Invited"')) {
+  die(json_encode(Array("status" => "ERROR", "errormsg" => "You don't have permission to do that." )));
+}
+
+$db->begin();
+$result = $db->update_sql("UPDATE userfriends
+                           SET usf_status = 'Accepted'
+                           WHERE (acc_id = $accid AND usf_id = ".$_SESSION['loggeduser']['id'].")
+                           OR (usf_id = $accid AND acc_id = ".$_SESSION['loggeduser']['id'].")");
+
+if ($result) {
+    $db->commit();
+    $pendingFriends = $db->select_one('SELECT COUNT(usf_id) FROM userfriends WHERE userfriends.usf_id = '.$_SESSION['loggeduser']['id'].' AND userfriends.usf_status = "Invited"');
+    $newFriendData = $db->select('SELECT acc_id, usp_photo, usp_firstname, usp_lastname
+                                 FROM userprofile
+                                 WHERE acc_id = '.$accid);
+    $newFriendData = $db->get_row($newFriendData);
+    if ($newFriendData['usp_photo'] == "") {
+       $newFriendData['usp_photo'] = urlimage($newFriendData['usp_photo'], "user");
+    }
+	die(json_encode(Array("status" => "OK", "pendingFriends" => $pendingFriends, "friendData" => $newFriendData)));
+} else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+}
+?><?php 
+	if (!$GET_service || $GET_service != "addEvent") {
+	die("<script>window.location='../?'</script>");
+}
+
+if (!isset($_SESSION['loggeduser']) || $_SESSION['loggeduser']['id'] == "") {
+	die("<script>window.location='./?'</script>");
+}
+header('Content-Type: text/json; charset=UTF-8');
+require_once('../library/class.phpmailer.php');
+
+
+$when = $_POST['when'];
+//echo $when;
+$hour = $_POST['hour'];
+//echo $hour;
+$name = $_POST['name'];
+//echo $name;
+$where = $_POST['where'];
+//echo $where;
+
+$phone = $_POST['phone'];
+
+$cellphone = $_POST['cellphone'];
+
+//$idevent = $_POST['idevent'];
+$user = $_POST['who'];
+//$reply = $_POST['reply'];
+
+$info = $_POST['info'];
+$db->begin();
+$result1 = $db->insert_sql("INSERT INTO `events` (`eve_name`, `eve_when`, `eve_hour`, `eve_where`, `eve_info`,`eve_phone`,`eve_cellphone`, `acc_id`)VALUES ('".$name."', '".$when."', '".$hour."', '".$where."', '".$info."','".$phone."','".$cellphone."', '".$_SESSION['loggeduser']['id']."');");
+
+$division = explode(",",$user);
+
+$values = "";
+$i = 0;
+$status = 'no';
+while ($i < sizeof($division)) {
+	if($division[$i] != 0){
+		$values.= "('".$result1."','".$division[$i]."','invited'), ";
+		$usermail = $db->select("SELECT acc_email FROM useraccount WHERE acc_id = '".$division[$i]."' ");
+		$usermail = $db->get_row($usermail);
+		$email = $usermail['acc_email'];
+		$info = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$division[$i]."' ");
+		$info = $db->get_row($info);
+		$userowner = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$_SESSION['loggeduser']['id']."'");
+		$userowner = $db->get_row($userowner);
+		
+		/*Send Mail*/
+		$mail = new PHPMailer();
+  
+  		$mail->IsSMTP();
+  		$mail->SMTPSecure = "tls"; // set mailer to use SMTP
+  		$mail->Host = MailHost();  // specify main and backup server
+  		$mail->SMTPAuth = true; // turn on SMTP authentication
+  		$mail->Username = MailUser();  // SMTP username
+  		$mail->Password = MailPasswd(); // SMTP password
+  		$mail->From = "whatoodo@whatoodo.com";
+  		$mail->FromName = "Invite to event";
+  		$mail->AddAddress($email);
+		$mail->IsHTML(true);
+  
+  		$mail->Subject = "Whatoodo party";
+  		$mail->Body    = "<div class='main-container' style='width: 512px; border: 1px solid;'>
+  								<div class='header' style='width: 512px; height: 55px; background-color: purple; '>
+  									<div class='image-logo' style=''>
+  											<img src='http://www.whatoodo.com/images/icons/brand.png'/>
+  									</div>		
+  								</div>
+  								<div class='image-profile' style='float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'>
+  											<img src='http://images.whatoodo.com/images/events/".$eventname['eve_photo']."' style='margin-top: 20px; margin-right: 10px; float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'/>
+  								</div>
+  								<div class='text' style='display: inline-block; margin-left: 20px; margin-top: 20px;'>
+										Hi ".$info['usp_firstname'].' '.$info['usp_lastname']."<br/><br/><br/>
+										 ".$userowner['usp_firstname'].' '.$userowner['usp_lastname']." has invited you to have fun with him at ".$name."<br/>
+										 Follow the link below to confirm and enjoy it!<br/><br/><br/>
+										 <a href='http://www.whatoodo.com/?page=profileevent&eveid=".$result1."'>Whatoodo Events</a><br/><br/><br/>
+										 
+										 Whatoodo<br/>
+										 Lot's of thing out there!
+										 
+								</div>
+  						</div>";
+  
+  		if(!$mail->Send()) {
+     		echo "Message could not be sent. <p>";
+     		echo "Mailer Error: " . $mail->ErrorInfo;
+     		exit;
+  			}
+		}
+	$i++;
+	}
+$values = substr($values, 0, -2);
+if ($i == 0) { $values = ""; }
+
+$result2 = $db->insert_sql("INSERT INTO `userevent`(`id_eve`, `acc_id`, `reply_event`) VALUES ".$values.";");
+
+if ($result1) {
+		$db->commit();
+		//die("<script>window.location='?page=profileevent&eveid=64'</script>");
+		die(json_encode(Array("status" => $result1)));
+		//die(json_encode(Array("event" => $result1)));
+	} else {
+		$db->rollback();
+		die(json_encode(Array("status" => "ERROR")));
+	}
+
+
+	
+	
+?><?php 
+	if (!$GET_service || $GET_service != "addEventPlace") {
+	die("<script>window.location='../?'</script>");
+}
+
+if (!isset($_SESSION['loggeduser']) || $_SESSION['loggeduser']['id'] == "") {
+	die("<script>window.location='./?'</script>");
+}
+header('Content-Type: text/json; charset=UTF-8');
+require_once('../library/class.phpmailer.php');
+
+$place = $_POST['place'];
+
+$placeinfo = $_POST['placeinfo'];
+
+$placename = $_POST['placename'];
+
+$placehour = $_POST['placehour'];
+
+$placedate = $_POST['placedate'];
+
+$placecost = $_POST['placecost'];
+
+$db->begin();
+$placelocal = $db->select("SELECT pla_address, pla_telephone1, pla_telephone2 FROM place WHERE pla_id = '".$place."'");
+$placelocal = $db->get_row($placelocal);
+
+$result1 = $db->insert_sql("INSERT INTO `events` (`eve_name`, `eve_when`, `eve_hour`, `eve_where`, `eve_info`,`eve_phone`,`eve_cellphone`, `acc_id`, `pla_id`, `eve_cost`)
+			VALUES ('".$placename."', '".$placedate."', '".$placehour."', '".$placelocal['pla_address']."', '".$placeinfo."',
+			'".$placelocal['pla_telephone1']."','".$placelocal['pla_telephone2']."', '".$_SESSION['loggeduser']['id']."', '".$place."','".$placecost."');");
+
+$users = Array();			
+$liked = $db->select("SELECT acc_id FROM likeplace WHERE pla_id = '".$place."'");
+while($like = $db->get_row($liked)){
+	$users[] .= $like['acc_id'];
+}
+
+$values = "";
+$i = 0;
+$status = 'no';
+while ($i < sizeof($users)) {
+	if($users[$i] != 0 AND $users[$i] != $_SESSION['loggeduser']['id']){
+		$values.= "('".$result1."','".$users[$i]."','invited'), ";
+		$usermail = $db->select("SELECT acc_email FROM useraccount WHERE acc_id = '".$users[$i]."' ");
+		$usermail = $db->get_row($usermail);
+		$email = $usermail['acc_email'];
+		$info = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$users[$i]."' ");
+		$info = $db->get_row($info);
+		$userowner = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$_SESSION['loggeduser']['id']."'");
+		$userowner = $db->get_row($userowner);
+		
+		/*Send Mail*/
+		$mail = new PHPMailer();
+  
+  		$mail->IsSMTP();
+  		$mail->SMTPSecure = "tls"; // set mailer to use SMTP
+  		$mail->Host = MailHost();  // specify main and backup server
+  		$mail->SMTPAuth = true; // turn on SMTP authentication
+  		$mail->Username = MailUser();  // SMTP username
+  		$mail->Password = MailPasswd(); // SMTP password
+  		$mail->From = "whatoodo@whatoodo.com";
+  		$mail->FromName = "Invite to event";
+  		$mail->AddAddress($email);
+		$mail->IsHTML(true);
+  
+  		$mail->Subject = "Whatoodo party";
+  		$mail->Body    = "<div class='main-container' style='width: 512px; border: 1px solid;'>
+  								<div class='header' style='width: 512px; height: 55px; background-color: purple; '>
+  									<div class='image-logo' style=''>
+  											<img src='http://www.whatoodo.com/images/icons/brand.png'/>
+  									</div>		
+  								</div>
+  								<div class='image-profile' style='float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'>
+  											<img src='http://images.whatoodo.com/images/events/".$eventname['eve_photo']."' style='margin-top: 20px; margin-right: 10px; float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'/>
+  								</div>
+  								<div class='text' style='display: inline-block; margin-left: 20px; margin-top: 20px;'>
+										Hi ".$info['usp_firstname'].' '.$info['usp_lastname']."<br/><br/><br/>
+										 ".$userowner['usp_firstname'].' '.$userowner['usp_lastname']." has invited you to have fun with him at ".$placename."<br/>
+										 Follow the link below to confirm and enjoy it!<br/><br/><br/>
+										 <a href='http://www.whatoodo.com/?page=profileevent&eveid=".$result1."'>Whatoodo Events</a><br/><br/><br/>
+										 
+										 Whatoodo<br/>
+										 Lot's of thing out there!
+										 
+								</div>
+  						</div>";	
+	}
+	$i++;
+}
+$values = substr($values, 0, -2);
+if ($i == 0) { $values = ""; }
+$result2 = $db->insert_sql("INSERT INTO `userevent`(`id_eve`, `acc_id`, `reply_event`) VALUES ".$values.";");
+
+if ($result1) {
+		$db->commit();
+		//die("<script>window.location='?page=profileevent&eveid=64'</script>");
+		die(json_encode(Array("status" => $result1)));
+		//die(json_encode(Array("event" => $result1)));
+	} else {
+		$db->rollback();
+		die(json_encode(Array("status" => "ERROR")));
+	}
+
+
+	
+	
+?><?php
+//Raw protection 
+if (!$GET_service || $GET_service != "addFriend" || !$_SESSION['loggeduser']['id']) {
+  die("<script>window.location='../?'</script>");
+}
+header('Content-Type: text/json; charset=UTF-8');
+
+//Gathers data
+$friendId = mysql_escape_string($_POST['friendId']);
+$msg = mysql_escape_string($_POST['msg']);
+$lists = $_POST['lists'];
+if ($lists == "null") { $lists = Array(); }
+
+//Checks for permissions
+if ($db->select_one("SELECT acc_id FROM userfriends WHERE acc_id = '".$_SESSION['loggeduser']['id']."' AND usf_id = $friendId ")) {
+  die(json_encode(Array("status" => "ERROR", "errormsg" => "You already requested this person." )));
+}
+if ($friendId == $_SESSION['loggeduser']['id']) {
+  die(json_encode(Array("status" => "ERROR", "errormsg" => "You don't have permission to do that." )));
+}
+
+$db->begin();
+$result1 = $db->insert_sql("INSERT INTO `userfriends` (`acc_id` , `usf_id`, `usf_status`, `acc_message`) VALUES
+                          ('".$_SESSION['loggeduser']['id']."', '".$friendId."', 'Invited', '".$msg."'),
+                          ('".$friendId."', '".$_SESSION['loggeduser']['id']."', 'Requester', ' ')");
+$result2 = "INSERT INTO listusers (`lis_id`, `acc_id`) VALUES ";
+for ($i = 0; $i < sizeof($lists); $i++) {
+	$result2 .= "(".$lists[$i].", ".$friendId.")";
+	if ($i < (sizeof($lists) - 1)) { $result2 .= ", "; }
+}
+if (sizeof($lists) > 0) {
+	$result2 = $db->insert_sql($result2);
+}
+
+if ($result1 && $result2) {
+  $db->commit();
+  die(json_encode(Array("status" => "OK")));
+} else {
+  $db->rollback();
+  die(json_encode(Array("status" => "ERROR")));
+} 
+?><?php 
+//Raw protection
+if (!$GET_service || $GET_service != "addPromotion" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$promo = $_POST['promo'];
+$days = $_POST['days'];
+$hrbegin = $_POST['hrbegin'];
+$hrend = $_POST['hrend'];
+$placeid = $_POST['placeid'];
+$date = date('Y-m-d H:i:s');
+
+$db->begin();
+$result1 = $db->insert_sql("INSERT INTO `businesstime` (`pla_id`,`bus_day`,`bus_start`,`bus_end`,`bus_promoday`,`bus_description`,`bus_date`)
+							VALUES('".$placeid."','".$days."','".$hrbegin."','".$hrend."','1','".$promo."','".$date."')");
+
+if ($result1) {
+	$db->commit();
+	echo json_encode("{ 'status' : 'OK' }");
+} else {
+	$db->rollback();
+	echo json_encode("{ 'status' : 'ERROR' }");
+}	
+?><?php
+
+if (!$GET_service || $GET_service != "changeEventCellphone" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$cellphone = $_POST['cellphone'];
+$id = $_POST['event'];
+
+$result1b = $db->update_sql("UPDATE `events` SET `eve_cellphone` = '".$cellphone."' WHERE `eve_id` = '".$id."'");
+
+
+
+?><?php
+
+if (!$GET_service || $GET_service != "changeEventCost" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$cost = $_POST['cost'];
+$id = $_POST['event'];
+
+$result1b = $db->update_sql("UPDATE `events` SET `eve_cost` = '".$cost."' WHERE `eve_id` = '".$id."'");
+
+
+
+?><?php
+
+if (!$GET_service || $GET_service != "changeEventDate" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$date = $_POST['date'];
+$id = $_POST['event'];
+
+$result1b = $db->update_sql("UPDATE `events` SET `eve_when` = '".$date."' WHERE `eve_id` = '".$id."'");
+
+
+
+?><?php
+
+if (!$GET_service || $GET_service != "changeEventDescription" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$description = $_POST['description'];
+$id = $_POST['event'];
+
+$result1b = $db->update_sql("UPDATE `events` SET `eve_info` = '".$description."' WHERE `eve_id` = '".$id."'");
+
+
+
+?><?php
+
+if (!$GET_service || $GET_service != "changeEventLocal" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$local = $_POST['local'];
+$id = $_POST['event'];
+
+$result1b = $db->update_sql("UPDATE `events` SET `eve_where` = '".$local."' WHERE `eve_id` = '".$id."'");
+
+
+
+?><?php
+
+if (!$GET_service || $GET_service != "changeEventPhone" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$phone = $_POST['phone'];
+$id = $_POST['event'];
+
+$result1b = $db->update_sql("UPDATE `events` SET `eve_phone` = '".$phone."' WHERE `eve_id` = '".$id."'");
+
+
+
+?><?php
+
+if (!$GET_service || $GET_service != "changeEventTitle" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$title = $_POST['title'];
+$id = $_POST['event'];
+
+$result1b = $db->update_sql("UPDATE `events` SET `eve_name` = '".$title."' WHERE `eve_id` = '".$id."'");
+
+
+
+?><?php
+
+//Raw protection
+if (!$GET_service || $GET_service != "changePhoto" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$file = $_FILES['userphoto'];
+$date = date('Y-m-d H:i:s');
+$source = '<a href="http://www.whatoodo.com" target="blank">Whatoodo</a>'; 
+if (isset($file)) {
+  //Upload photo
+  $ftp = new ClsFTP($CONFIG_ftp_user, $CONFIG_ftp_pass, $CONFIG_ftp_host, $CONFIG_ftp_port);
+  $ftp->cd($CONFIG_ftp_dir.$CONFIG_image_path_user);
+  //Nomear a foto
+  $photoname = time() . "_" . $_SESSION['loggeduser']['id'] . "_n." . end(explode(".", $file['name']));
+	//Fazer upload
+  $photoactual = $db->select("SELECT * FROM userprofile WHERE acc_id = '".$_SESSION['loggeduser']['id']."'");
+  $photoactual = $db->get_row($photoactual);
+  $ftp->delete($photoactual['usp_photo']);
+  if($ftp->put($photoname, $file['tmp_name'])){
+  	
+  	$thumb = createThumbs($file['tmp_name'], 80, 80);
+	$ftp->put(str_replace("_n", "_t", $photoname), $thumb);
+	   //Gravar em banco
+	$result1b = $db->update_sql("UPDATE `userprofile` SET `usp_photo` = '".$photoname."' WHERE `acc_id` = '".$_SESSION['loggeduser']['id']."'");
+		  
+	$ftp->cd($CONFIG_ftp_dir.$CONFIG_image_path_gallery);
+	if($ftp->mkdir($_SESSION['loggeduser']['id'])){
+		$result1 = $db->insert_sql("INSERT INTO `gallery` (`acc_id`,`gal_name`,`gal_folder`,`gal_created`)
+		VALUES('".$_SESSION['loggeduser']['id']."','Profile Photos','".$_SESSION['loggeduser']['id']."','".$date."')");
+	}
+	$result1 = $db->select("SELECT * FROM gallery WHERE gal_folder = '".$_SESSION['loggeduser']['id']."'");
+	$result1 = $db->get_row($result1);
+	
+	$ftp->cd($_SESSION['loggeduser']['id']);
+	$photoalbum = time() . "_" . $_SESSION['loggeduser']['id'] . "_n." . end(explode(".", $file['name']));
+	if($ftp->put($photoalbum, $file['tmp_name'])){
+	
+		$result7 = $db->insert_sql("INSERT INTO `galleryphotos` (`gal_id`,`glp_photo`,`glp_date`)VALUES('".$result1['gal_id']."','".$photoalbum."','".$date."');");
+		$photoid = $result7;
+			
+		$result2 = $db->insert_sql("INSERT INTO `news` (`acc_id`,`new_type`,`new_date`,`new_source`,`new_target`)VALUES('".$_SESSION['loggeduser']['id']."','Photo','".$date."','".$source."','".$photoid."');");
+	
+		$result4 = $db->update_sql("UPDATE `gallery` SET gal_cover = '".$photoid."' WHERE gal_folder='".$_SESSION['loggeduser']['id']."'");
+		}
+	$thumb = createThumbs($file['tmp_name'], 80, 80);
+	$ftp->put(str_replace("_n", "_t", $photoalbum), $thumb);
+  	}
+  	die("<script>window.location='./?'</script>");
+}
+?><?php
+
+if (!$GET_service || $GET_service != "changePlacePhoto" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$placeid = $_GET['pid'];
+$file = $_FILES['placephoto'];
+$date = date('Y-m-d H:i:s');
+$source = '<a href="http://www.whatoodo.com" target="blank">Whatoodo</a>';
+
+if (isset($file) && $file['size']!=0) {
+  //Upload photo
+  $ftp = new ClsFTP($CONFIG_ftp_user, $CONFIG_ftp_pass, $CONFIG_ftp_host, $CONFIG_ftp_port);
+  $ftp->cd($CONFIG_ftp_dir.$CONFIG_image_path_places);
+  //Nomear a foto
+  $photoname = time() . "_" . $placeid . "_n." . end(explode(".", $file['name']));
+	//Fazer upload
+  $photoactual = $db->select("SELECT * FROM place WHERE pla_id = '".$placeid."'");
+  $photoactual = $db->get_row($photoactual);
+  $ftp->delete($photoactual['pla_photo']);
+  if($ftp->put($photoname, $file['tmp_name'])){
+	 //Gravar em banco
+	 $result1b = $db->update_sql("UPDATE `place` SET `pla_photo` = '".$photoname."' WHERE `pla_id` = '".$placeid."'");
+  }
+  	die("<script>history.go(-1)</script>");
+}
+die("<script>history.go(-1)</script>");
+?><?php
+header('Content-Type: text/json; charset=UTF-8');
+//Raw protection
+if (!$GET_service || $GET_service != "deleteEvent") {
+	die("<script>window.location='../?'</script>");
+}
+//Gets message data and verifies if the user can read this message
+if (!isset($_SESSION['loggeduser']['id'])) {
+  die("<script>window.location='./?'</script>");
+}
+
+$event = mysql_real_escape_string($POST_event);
+
+
+
+$db->begin();
+$result = $db->delete_sql("DELETE FROM eventcomment WHERE eve_id = '".$event."'");
+$result2 = $db->delete_sql("DELETE FROM userevent WHERE id_eve = '".$event."'");
+$eventview = $db->select("SELECT eve_photo FROM events WHERE eve_id = '".$event."'");
+$eventview = $db->get_row($eventview);
+$picture = $eventview['eve_photo']; 
+if($picture == ''){
+	$result3 = $db->delete_sql("DELETE FROM events WHERE eve_id = '".$event."'");
+}else{
+	$ftp = new ClsFTP($CONFIG_ftp_user, $CONFIG_ftp_pass, $CONFIG_ftp_host, $CONFIG_ftp_port);
+  	$ftp->cd($CONFIG_ftp_dir.$CONFIG_image_path_events);
+	$ftp->delete($picture);
+	$ftp->delete(str_replace("_n", "_t", $picture));
+	$result3 = $db->delete_sql("DELETE FROM events WHERE eve_id = '".$event."'");
+}
+
+if ($result && $result2 && $result3) {
+    $db->commit();
+	  die(json_encode(Array("status" => "OK")));
+} else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+}
+?><?php
+header('Content-Type: text/json; charset=UTF-8'); 
+if (!$GET_service || $GET_service != "deleteFriend") {
+	die("<script>window.location='../?'</script>");
+}
+
+if (!isset($_SESSION['loggeduser']) || $_SESSION['loggeduser']['id'] == "") {
+	die("<script>window.location='./?'</script>");
+}
+
+$friendid  =  mysql_real_escape_string($POST_friendid);
+
+//Get the group administrator
+$loggeduser = $_SESSION['loggeduser']['id'];
+$db->begin();
+$result = $db->update_sql("DELETE FROM userfriends 
+                           WHERE (acc_id = $loggeduser AND usf_id = $friendid) OR (acc_id = $friendid AND usf_id = $loggeduser)");
+  
+  
+//Response
+if ($result) {
+	$db->commit();
+  
+	die(json_encode(Array("status" => "OK")));
+} else {
+	$db->rollback();
+	die(json_encode(Array("status" => "ERROR")));
+}	
+?><?php
+header('Content-Type: text/json; charset=UTF-8');
+//Raw protection
+if (!$GET_service || $GET_service != "deleteNews") {
+	die("<script>window.location='../?'</script>");
+}
+//Gets message data and verifies if the user can read this message
+if (!isset($_SESSION['loggeduser']['id'])) {
+  die("<script>window.location='./?'</script>");
+}
+
+$newid = mysql_escape_string($POST_newid);
+
+if ($newid == "") {
+  die(json_encode(Array("status" => "ERROR", "errormsg" => "No news to delete." )));
+}
+if (!$db->select_one("SELECT acc_id FROM news WHERE new_id = $newid AND acc_id = ".$_SESSION['loggeduser']['id'])) {
+  die(json_encode(Array("status" => "ERROR", "errormsg" => "You don't have permission to do that." )));
+}
+
+$db->begin();
+$result = $db->delete_sql("DELETE FROM news WHERE (new_id = $newid OR new_inReplyTo = $newid)");
+$resul2 = $db->delete_sql("DELETE IGNORE FROM notification WHERE new_id = $newid");
+
+if ($result && $resul2) {
+    $db->commit();
+	  die(json_encode(Array("status" => "OK")));
+} else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+}
+?><?php
+header('Content-Type: text/json; charset=UTF-8');
+//Raw protection
+
+if (!$GET_service || $GET_service != "deletePlacephoto" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$photo = mysql_real_escape_string($POST_plo_id);
+$gallery = mysql_real_escape_string($POST_glp_id);
+
+
+if ($photo == "") {
+  die(json_encode(Array("status" => "ERROR", "errormsg" => "No photo to delete." )));
+}
+
+$db->begin();
+
+$result1 = $db->select("SELECT * FROM galleryplace WHERE glp_id='".$gallery."'");
+$result1 = $db->get_row($result1);
+
+
+//$photo_comments = $db->select_one("SELECT * FROM news WHERE new_target = $photo AND new_type = 'Photo'");
+
+$result2 = $db->delete_sql("DELETE FROM news WHERE new_target = $photo");
+//$result6 = $db->delete_sql("DELETE FROM news WHERE new_inReplyTo = $photo_comments");
+
+$result3 = $db->select("SELECT * FROM placephotos WHERE plo_id='".$photo."'");
+$result3 = $db->get_row($result3);
+
+$ftp = new ClsFTP($CONFIG_ftp_user, $CONFIG_ftp_pass, $CONFIG_ftp_host, $CONFIG_ftp_port);
+$ftp->cd($CONFIG_ftp_dir.$CONFIG_image_path_places.$result1['glp_folder']);
+$ftp->delete($result3['plo_photo']);
+$ftp->delete(str_replace("_n", "_t", $result3['plo_photo']));
+
+$result4 = $db->delete_sql("DELETE FROM placephotos WHERE plo_id = $photo");
+//$result5 = $db->delete_sql("DELETE FROM galleryphotostags WHERE glp_id = $photo");
+
+
+if($photo == $result1['gal_cover']){
+	$result5 = $db->update_sql("UPDATE `galleryplace` SET gal_cover = '00' WHERE glp_id='".$gallery."'");
+}
+
+if ($result1 && $result3 && $result2) {
+    $db->commit();
+	  die(json_encode(Array("status" => "OK")));
+	  die("<script>window.location='../?userhome'</script>");
+} else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+}
+?><?php
+//Raw protection 
+if (!$GET_service || $GET_service != "dislikePlace" || !$_SESSION['loggeduser']['id']) {
+  die("<script>window.location='../?'</script>");
+}
+header('Content-Type: text/json; charset=UTF-8');
+
+//Gathers data
+$place = mysql_escape_string($_POST['place']);
+
+$db->begin();
+$result1 = $db->delete_sql("DELETE FROM likeplace WHERE pla_id = '".$place."' AND acc_id = '".$_SESSION['loggeduser']['id']."'");
+
+if ($result1) {
+	$db->commit();
+	echo json_encode("{ 'status' : 'OK' }");
+} else {
+	$db->rollback();
+	echo json_encode("{ 'status' : 'ERROR' }");
+}	
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "editAccount") {
+  die("<script>window.location='../?'</script>");
+}  
+require_once('../library/class.phpmailer.php');
+
+switch($POST_type) {
+  case "Password":
+    $oldpass = sha1(mysql_real_escape_string($POST_oldpass));
+    $newpass = sha1(mysql_real_escape_string($POST_newpass));
+    if (!$db->select_one("SELECT acc_id FROM useraccount WHERE acc_password = '".$oldpass."' AND acc_id = ".$_SESSION['loggeduser']['id'])) {
+        die(json_encode(Array("status" => "ERROR", "errormsg" => "Wrong password, please verify it and try again." ))); 
+    }
+    $db->begin();
+    $result = $db->update_sql("UPDATE useraccount SET acc_password = '$newpass' WHERE acc_id = ".$_SESSION['loggeduser']['id']);
+    if ($result) {
+        $db->commit();
+        die(json_encode(Array("status" => "OK")));
+    } else {
+        $db->rollback();
+        die(json_encode(Array("status" => "ERROR")));
+    }
+    break;    
+ 
+  case "Email":
+    $email = mysql_real_escape_string($POST_email);
+    $db->begin();
+    $key = createRandomKey(20);
+    while ($db->select_one("SELECT acc_key FROM useraccount WHERE acc_key = ".$key)) {
+        $key = createRandomKey(20);  
+    }
+    $result = $db->update_sql("UPDATE useraccount SET acc_email = '$email', acc_verificationkey = '$key', acc_status = 'Unverified' WHERE acc_id = ".$_SESSION['loggeduser']['id']);
+    
+    //Send Email
+    //inicio para enviar email
+    $mail = new PHPMailer();
+  
+    $mail->IsSMTP();
+    $mail->SMTPSecure = "tls"; // set mailer to use SMTP
+    $mail->Host = "mail.whatoodo.com";  // specify main and backup server
+    $mail->SMTPAuth = true; // turn on SMTP authentication
+    $mail->Username = "whatoodo@whatoodo.com";  // SMTP username
+    $mail->Password = "123mudar"; // SMTP password
+  
+    $mail->From = "whatoodo@whatoodo.com";
+    $mail->FromName = "Validation key";
+    $mail->AddAddress($email);
+  
+    $mail->Subject = "Whatoodo validation key";
+    $mail->Body    = "You requested an email exchange\n\nThe link is: http://www.whatoodo.com/verify.php?key=".$key;
+    
+    if ($result && $mail->Send()) {
+        $db->commit();
+        die(json_encode(Array("status" => "OK")));
+    } else {
+        $db->rollback();
+        die(json_encode(Array("status" => "ERROR")));
+    }
+    break;
+ 
+  default:
+    die(json_encode(Array("status" => "ERROR")));
+}
+<?php
+//Raw protection
+if (!$GET_service || $GET_service != "editPreference") {
+  die("<script>window.location='../?'</script>");
+}  
+  //Beggining on the validations
+  $data = $POST_data;
+  $loggeduser = $_SESSION['loggeduser']['id'];
+    $preferences = $data["preferences"];
+    $db->begin();
+    //Valida username novamente
+    $i = 0;
+    $values = "";
+    $values2 = "";
+    while ($i < sizeof($preferences)) {
+      $j = 0;
+      if (!isset($preferences[$i]["stars"])) { $preferences[$i]["stars"] = Array(); }
+      while ($j < sizeof($preferences[$i]["stars"])) {
+        $values .= "WHEN '". $preferences[$i]["stars"][$j]["categoryid"] ."' THEN '".$preferences[$i]["stars"][$j]["rating"]."' ";        
+        $values2 .= $preferences[$i]["stars"][$j]["categoryid"].",";
+        if ($j < (sizeof($preferences[$i]["stars"]) - 1) || $i < (sizeof($preferences) - 1)) { $values .= " "; }
+        $j++;
+      }
+      $i++;
+    }
+    
+    $values2 = substr($values2,0, -1);
+    if (substr($values, -2) == ", ") { $values = substr($values, 0, sizeof($values) - 3); }
+    $result1 = $db->update_sql("UPDATE `userpreferences` SET pre_rating = CASE cat_id ".$values." END WHERE cat_id IN (".$values2.") AND acc_id = $loggeduser;");
+    if ($result1) {
+      $db->commit();
+      die("OK");
+    } else {
+      $db->rollback();
+      die("ERROR");
+    }
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "getEvents") {
+	die("<script>window.location='../?'</script>");
+}
+
+$plaid = mysql_real_escape_string($GET_pid);
+//Gets places information
+//Esse select define os dados a serem resgatados
+$day = date("Y-m-d");
+$eventList =  $db->select("SELECT *,(SELECT DAYOFWEEK(eve_when)) AS dayofweek FROM events WHERE events.eve_when >= '".$day."' AND events.pla_id = '".$plaid."' ORDER BY eve_when LIMIT 4");
+
+$return = Array();
+$return['events'] = Array();
+while($row = $db->get_row($eventList)) {
+	//$db->print_last_query();
+	if ($row) {
+		if ($row['eve_photo']) {
+			$row['eve_photo'] = urlimage($row['eve_photo'], "events");	
+		} else {
+			$row['eve_photo'] = "images/camera-icon.png";
+		}
+		array_push($return['events'], $row);
+	}
+}
+if ($eventList) { mysql_free_result($eventList); }
+header('Content-Type: text/json; charset=UTF-8');
+echo json_encode($return);
+
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "getFriendNews") {
+	die("<script>window.location='../?'</script>");
+}
+//Gets message data and verifies if the user is logged
+if (!isset($_SESSION['loggeduser']['id'])) {
+	die("<script>window.location='./?'</script>");
+}
+$limit = ($GET_p - 1) * 10;
+$profileid = mysql_real_escape_string($GET_pid);
+
+$return = array();
+
+$date = date("d/m/Y");
+$result = $db->select('SELECT DISTINCT hotplaces.usp_photo, hotplaces.usp_firstname, hotplaces.usp_lastname,
+	hotplaces.localname, hotplaces.new_type, hotplaces.new_message, hotplaces.reply, hotplaces.date,
+	hotplaces.owner, hotplaces.userid, hotplaces.new_id, hotplaces.eventgo
+	FROM ((SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname, place.pla_name AS localname,
+		news.new_type, news.new_message, news.new_inReplyTo AS reply, DATE_FORMAT(news.new_date, "%d/%m/%Y") as date, 
+		place.acc_id AS owner, userprofile.acc_id AS userid, news.new_id, place.pla_cost AS eventgo
+		FROM userprofile, userfriends, news, place WHERE news.acc_id = userfriends.usf_id 
+		AND news.new_inReplyTo = place.pla_id  
+		AND userfriends.usf_id = userprofile.acc_id 
+		AND userprofile.acc_id = "'.$profileid.'") 
+				UNION
+		(SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname, events.eve_name AS localname,
+		news.new_type, news.new_message, news.new_mention AS reply, DATE_FORMAT(news.new_date, "%d/%m/%Y") as date, 
+		events.acc_id AS owner, userprofile.acc_id AS userid, news.new_id, events.eve_id AS eventgo FROM userprofile, userevent, events, userfriends, news 
+		WHERE userevent.reply_event = "yes"
+		AND userfriends.usf_id = userevent.acc_id 
+		AND userevent.acc_id = userprofile.acc_id 
+		AND events.eve_id = userevent.id_eve 
+		AND news.acc_id = userfriends.usf_id 
+		AND news.new_mention = events.eve_id )) AS hotplaces CROSS JOIN userprofile AS userloged 
+		ORDER BY hotplaces.date DESC'
+		    );
+
+//$db->print_last_query();
+while ($row = $db->get_row($result)) {
+	$row['usp_photo'] = urlimage($row['usp_photo'], "user");
+	$row['userowner'] = trim($row['userowner'],0);
+ 	array_push($return, $row);
+}
+
+$db->free($result);
+
+header('Content-Type: text/json; charset=UTF-8');
+echo json_encode($return);
+?>
+<?php
+//Raw protection
+if (!$GET_service || $GET_service != "getFriendsCache") {
+	die("<script>window.location='../?'</script>");
+}
+
+$q = mysql_real_escape_string(str_replace("%", "", $_GET['q']));
+if ($q == "") { die(json_encode(array())); }
+
+$result =  $db->select("SELECT userprofile.acc_id AS id, CONCAT(userprofile.usp_firstname, ' ', userprofile.usp_lastname) AS name FROM userprofile, userfriends WHERE userfriends.acc_id = '".$_SESSION['loggeduser']['id']."' AND CONCAT(userprofile.usp_firstname, ' ', userprofile.usp_lastname) LIKE '%".$q."%' AND userfriends.usf_id = userprofile.acc_id");
+
+$return = Array();
+while($row = $db->get_row($result)) {
+	array_push($return, $row);
+}
+mysql_free_result($result);
+header('Content-Type: text/json; charset=UTF-8');
+echo json_encode($return);
+
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "getNewFriendData") {
+  die("<script>window.location='../?'</script>");
+}
+
+if (!isset($_SESSION['loggeduser']['lastsuggestion'])) {
+  $_SESSION['loggeduser']['lastsuggestion']['acc_id'] = 0;
+}
+header('Content-Type: text/json; charset=UTF-8');
+
+$id = $GET_id;
+
+//Performs the main query
+$result = $db->select("SELECT usp_firstname, usp_lastname, usp_birthdate, usp_photo, usp_gender, usp_city, usp_country FROM userprofile WHERE acc_id = $id ");
+$return = $db->get_row($result);
+$return['usp_photo'] = urlimage($return['usp_photo'], "user");
+$return['list'] = array();
+$return['age'] = age($return['usp_birthdate']);
+$result = $db->select("SELECT lis_id, lis_name FROM list WHERE acc_id = ".$_SESSION['loggeduser']['id']);
+while ($row = $db->get_row($result)) {
+  array_push($return['list'], $row);
+} 
+
+$return['friendsData'] = array();
+$result = $db->select("SELECT usp_photo, usp_firstname, usp_lastname FROM userprofile WHERE acc_id IN
+							 (SELECT usf_id FROM userfriends WHERE usf_id IN
+							 (SELECT usf_id FROM userfriends WHERE acc_id = ".$_SESSION['loggeduser']['id']." ) AND acc_id = $id AND usf_id != $id ) LIMIT 7");
+
+
+while ($row = $db->get_row($result)) {
+  $row['usp_photo'] = urlimage($row['usp_photo'], "user");
+  array_push($return['friendsData'], $row);
+} 
+mysql_free_result($result);
+
+echo json_encode($return);
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "getNews") {
+	die("<script>window.location='../?'</script>");
+}
+//Gets message data and verifies if the user is logged
+if (!isset($_SESSION['loggeduser']['id'])) {
+	die("<script>window.location='./?'</script>");
+}
+$limit = ($GET_p - 1) * 10;
+
+$return = array();
+
+$date = date("d/m/Y");
+$result = $db->select('SELECT userloged.acc_id as userowner, hotplaces.usp_photo, hotplaces.usp_firstname, hotplaces.usp_lastname,
+						hotplaces.localname, hotplaces.new_type, hotplaces.new_message, hotplaces.reply, hotplaces.date,
+						hotplaces.owner, hotplaces.userid, hotplaces.new_id, hotplaces.eventgo
+						FROM ((SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname, place.pla_name AS localname,
+							news.new_type, news.new_message, news.new_inReplyTo AS reply, DATE_FORMAT(news.new_date, "%d/%m/%Y") as date, 
+							place.acc_id AS owner, userprofile.acc_id AS userid, news.new_id, place.pla_cost AS eventgo
+							FROM userprofile, userfriends, news, place WHERE news.acc_id = userfriends.usf_id 
+							AND news.new_inReplyTo = place.pla_id  
+							AND userfriends.usf_id = userprofile.acc_id ) 
+									UNION
+							(SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname, events.eve_name AS localname,
+							news.new_type, news.new_message, news.new_mention AS reply, DATE_FORMAT(news.new_date, "%d/%m/%Y") as date, 
+							events.acc_id AS owner, userprofile.acc_id AS userid, news.new_id, events.eve_id AS eventgo FROM userprofile, userevent, events, userfriends, news 
+								WHERE userevent.reply_event = "yes"
+								AND userfriends.usf_id = userevent.acc_id 
+								AND userevent.acc_id = userprofile.acc_id 
+								AND events.eve_id = userevent.id_eve 
+								AND news.acc_id = userfriends.usf_id 
+								AND news.new_mention = events.eve_id )) AS hotplaces CROSS JOIN userprofile AS userloged 
+								WHERE userloged.acc_id = '.$_SESSION['loggeduser']['id'].' ORDER BY date DESC LIMIT '.$limit.',10');
+
+//$db->print_last_query();
+while ($row = $db->get_row($result)) {
+	$row['usp_photo'] = urlimage($row['usp_photo'], "user");
+	$row['userowner'] = trim($row['userowner'],0);
+ 	array_push($return, $row);
+}
+
+$db->free($result);
+
+header('Content-Type: text/json; charset=UTF-8');
+echo json_encode($return);
+?>
+<?php
+//Raw protection
+if (!$GET_service || $GET_service != "getPlaces") {
+	die("<script>window.location='../?'</script>");
+}
+
+$return = Array();
+
+$week_days = Array();
+$week_days[0] = "Sunday";
+$week_days[1] = "Monday";
+$week_days[2] = "Tuesday";
+$week_days[3] = "Wednesday";
+$week_days[4] = "Thursday";
+$week_days[5] = "Friday";
+$week_days[6] = "Saturday";
+
+//Gets places information
+//Esse select define os dados a serem resgatados
+ if (!isset($_SESSION['loggeduser']['id'])){//if the user IS NOT logged in
+   //This query is executed 7 times one for each weekday
+   for($i = 0; $i < 7; $i++){
+   $placeList =  $db->select("SELECT DISTINCT id, name, image, pla_city, pla_country, bus_day_work, rev_average, cos_average,
+                     (CASE placeinfo.pla_city
+                     WHEN '".$_SESSION['ipdata']['City']."' THEN 1000
+                     ELSE 0
+                     END)+
+                     (CASE bus_promoday
+                     WHEN 1 THEN 100
+                     ELSE 0
+                     END)+                    
+                     (CASE rev_average
+                     WHEN 1 THEN 50
+                     WHEN 2 THEN 100
+                     WHEN 3 THEN 200
+                     WHEN 4 THEN 400
+                     WHEN 5 THEN 800
+                     ELSE 0
+                     END) AS relevance
+ FROM (SELECT DISTINCT cos_average, bus_day_work, bus_day AS bus_day_promo, id, name, image, pla_city, pla_country, bus_promoday, ROUND(IFNULL(AVG(rev_rating),0)) AS rev_average
+      FROM (SELECT DISTINCT pla_cost,bus_day AS bus_day_work, place.pla_id AS id, place.pla_name AS name, place.pla_photo AS image, place.pla_city, place.pla_country
+           FROM place,placetags, businesstime
+           WHERE place.pla_city = '".$_SESSION['ipdata']['City']."'
+           AND businesstime.pla_id = place.pla_id
+           AND businesstime.bus_day = '".$week_days[$i]."') as placeinfo
+      LEFT JOIN businesstime ON businesstime.pla_id = id AND businesstime.bus_day = '".date("l")."'
+      LEFT JOIN cost ON pla_cost = cost.cos_id
+      LEFT JOIN placereview ON placereview.pla_id = id
+      GROUP BY id)placeinfo    
+ ORDER BY relevance DESC
+ LIMIT 4");
+   for($j = 0; $j < 5; $j++) {
+     $place = $db->get_row($placeList);
+     if ($place) {
+       if ($place['image']) {
+         $place['image'] = urlimage($place['image'], "places");  
+       } else {
+       $place['image'] = "images/camera-icon.png";
+       }
+     array_push($return, $place);
+     }
+   }
+  //this query count how many places works in the specified weekday  
+  $placeCounter =  $db->select ("SELECT DISTINCT COUNT(*) AS pla_counter
+                FROM place, businesstime
+                WHERE place.pla_city = '".$_SESSION['ipdata']['City']."'
+                AND businesstime.pla_id = place.pla_id
+                AND businesstime.bus_day = '".$week_days[$i]."'");
+ $counter = $db->get_row($placeCounter);
+ array_push($return,$counter);
+ }
+   
+} else {
+  if ($GET_category != "All") {//if the user IS logged in and $GET_category IS NOT "All"(Deactivated)
+    $placeList =  $db->select("SELECT * FROM place,placetags WHERE pla_city LIKE '".$_SESSION['ipdata']['City']."' AND plt_tag LIKE '".$GET_category."' AND place.pla_id = placetags.pla_id LIMIT 5");
+  } else {
+  	//if the user IS logged in and $GET_category IS "All"
+    for($i = 0; $i < 7; $i++){
+    $placeList =  $db->select("SELECT DISTINCT id, name, image, pla_city, pla_country, bus_day_work, rev_average,
+               (CASE confirmed
+                    WHEN  0 THEN 0                    
+                    WHEN  1 THEN 50                    
+                    WHEN  2 THEN 100                    
+                    WHEN  3 THEN 150                    
+                    WHEN  4 THEN 200
+                    ELSE 200
+                    END)+
+                    (CASE my_event
+                    WHEN '0' THEN 0
+                    ELSE 5000
+                    END)+
+                    (CASE placeinfo.pla_city
+                    WHEN '".$_SESSION['ipdata']['City']."' THEN 1000
+                    ELSE 0
+                    END)+
+                    (CASE bus_promoday
+                    WHEN 1 THEN 100
+                    ELSE 0
+                    END)+                    
+                    (CASE pre_rating_average
+                    WHEN 1 THEN 50
+                    WHEN 2 THEN 100
+                    WHEN 3 THEN 200
+                    WHEN 4 THEN 400
+                    WHEN 5 THEN 800
+                    ELSE 0
+                    END)+
+                    (CASE rev_average
+                    WHEN 1 THEN 50
+                    WHEN 2 THEN 100
+                    WHEN 3 THEN 200
+                    WHEN 4 THEN 400
+                    WHEN 5 THEN 800
+                    ELSE 0
+                    END)+
+                    (CASE my_review
+                    WHEN 1 THEN 25
+                    WHEN 2 THEN 50
+                    WHEN 3 THEN 100
+                    WHEN 4 THEN 200
+                    WHEN 5 THEN 400
+                    ELSE 0
+                    END) AS relevance
+  FROM (SELECT DISTINCT bus_day_work, placereview.rev_rating AS my_review, pre_rating, placeinfo.cat_id AS place_cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, my_event, pre_rating_average, rev_average, COUNT(reply_event) AS confirmed
+     FROM (SELECT DISTINCT bus_day_work, bus_day AS bus_day_promo, IFNULL(pre_rating, 0) AS pre_rating, placeinfo.cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, eve_id, IFNULL(eve_name,0) AS my_event, ROUND(IFNULL(AVG(pre_rating),0)) AS pre_rating_average, ROUND(IFNULL(AVG(rev_rating),0)) AS rev_average
+          FROM (SELECT DISTINCT bus_day AS bus_day_work, cat_id, cat_name, place.pla_id AS id, place.pla_name AS name, place.pla_photo AS image, place.pla_city, place.pla_country
+               FROM place,placetags, category, businesstime
+               WHERE place.pla_id = placetags.pla_id
+               AND place.pla_city = '".$_SESSION['ipdata']['City']."'
+               AND category.cat_name = placetags.plt_tag
+               AND businesstime.pla_id = place.pla_id
+               AND businesstime.bus_day = '".$week_days[$i]."') as placeinfo
+          LEFT JOIN userpreferences ON userpreferences.cat_id = placeinfo.cat_id AND userpreferences.acc_id = '".$_SESSION['loggeduser']['id']."'
+          LEFT JOIN businesstime ON businesstime.pla_id = id AND businesstime.bus_day = '".date("l")."'
+          LEFT JOIN events ON events.pla_id = id AND events.acc_id = '".$_SESSION['loggeduser']['id']."'
+          LEFT JOIN placereview ON placereview.pla_id = id
+          GROUP BY id)placeinfo
+        LEFT JOIN userevent ON userevent.id_eve = eve_id AND userevent.reply_event = 'Yes'     
+        LEFT JOIN placereview ON placereview.pla_id = id AND placereview.acc_id = '".$_SESSION['loggeduser']['id']."'
+        GROUP BY id) placeinfo     
+    ORDER BY relevance DESC
+    LIMIT 4");
+  for($j = 0; $j < 5; $j++) {
+    $place = $db->get_row($placeList);
+    if ($place) {
+      if ($place['image']) {
+		    $place['image'] = urlimage($place['image'], "places");	
+		  } else {
+        $place['image'] = "images/camera-icon.png";
+      }
+   array_push($return, $place);
+	  }
+	}
+  
+	//count how many places works in the specified weekday
+  $placeCounter =  $db->select ("SELECT DISTINCT COUNT(*) AS pla_counter
+               FROM place, businesstime
+               WHERE place.pla_city = '".$_SESSION['ipdata']['City']."'
+               AND businesstime.pla_id = place.pla_id
+               AND businesstime.bus_day = '".$week_days[$i]."'");
+  $counter = $db->get_row($placeCounter);
+  array_push($return,$counter);
+    }
+  }
+}
+
+
+mysql_free_result($placeList);
+header('Content-Type: text/json; charset=UTF-8');
+echo json_encode($return);
+
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "getPlacesCache") {
+	die("<script>window.location='../?'</script>");
+}
+
+$q = mysql_real_escape_string(str_replace("%", "", $_GET['q']));
+if ($q == "") { die(json_encode(array())); }
+
+$placeList =  $db->select("SELECT pla_id AS id, pla_name AS name,
+                          CASE place.pla_city
+                              WHEN '".$_SESSION['ipdata']['City']."' THEN 1000
+                              ELSE 0
+                          END AS relevance FROM place WHERE pla_name LIKE '".$q."%'
+                          ORDER BY relevance DESC");
+
+$return = Array();
+while($place = $db->get_row($placeList)) {
+	array_push($return, $place);
+}
+mysql_free_result($placeList);
+header('Content-Type: text/json; charset=UTF-8');
+echo json_encode($return);
+
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "getPlacesSettings") {
+	die("<script>window.location='../?'</script>");
+}
+
+if (!isset($GET_page)) {
+  $GET_page = 1;
+}
+$lowerlimit = ($GET_page - 1) * 12;
+
+if ($GET_search != "") {
+  $search = "AND pla_name LIKE '%".mysql_real_escape_string($GET_search)."%'";
+} else {
+  $search = "";
+}
+
+//For placessetings.php
+if ($_SESSION['loggeduser']['accesslevel'] > 0) {
+  if ($GET_all == "true") {
+    $placeList =  $db->select("SELECT * FROM place WHERE 1 ".$search." LIMIT ".$lowerlimit.", 12");
+  } else {
+    $placeList =  $db->select("SELECT * FROM place WHERE acc_id =".$_SESSION['loggeduser']['id']." ".$search." LIMIT ".$lowerlimit.", 10");
+  }
+}
+
+$return = array();
+while ($place = $db->get_row($placeList)) {
+	if ($place) {
+		if ($place['pla_photo']) {
+			$place['pla_photo'] = urlimage($place['pla_photo'], "places");	
+		} else {
+			$place['pla_photo'] = "images/camera-icon.png" ;
+		}
+		array_push($return, $place);
+	}
+}
+mysql_free_result($placeList);
+header('Content-Type: text/json; charset=UTF-8');
+echo json_encode($return);
+
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "getSearchCache") {
+  die("<script>window.location='../?'</script>");
+}
+header('Content-Type: text/json; charset=UTF-8');
+
+//First case - people
+if (isset($_SESSION['loggeduser']['id'])){
+if (!isset($GET_q)) {
+$result =  $db->select("SELECT userprofile.acc_id AS id,
+                        CONCAT(userprofile.usp_firstname, ' ', userprofile.usp_lastname) AS name,
+                        userprofile.usp_photo AS image, userprofile.usp_city, userprofile.usp_country
+                        FROM userprofile, userfriends
+                        WHERE userfriends.acc_id = '".$_SESSION['loggeduser']['id']."'
+                        AND userfriends.usf_id = userprofile.acc_id"); 
+} else {
+$q = mysql_real_escape_string(str_replace("%", "", $GET_q));
+if ($q == "") { die(json_encode(array())); }
+$result =  $db->select("SELECT userprofile.acc_id AS id,
+                        CONCAT(userprofile.usp_firstname, ' ', userprofile.usp_lastname) AS name,
+                        userprofile.usp_photo AS image, userprofile.usp_city, userprofile.usp_country
+                        FROM userprofile
+                        WHERE CONCAT(userprofile.usp_firstname, ' ', userprofile.usp_lastname) LIKE '%".$q."%'
+                        AND userprofile.acc_id != '".$_SESSION['loggeduser']['id']."'");
+}
+$return = Array();
+while($row = $db->get_row($result)) {
+  $row['image'] = urlimage($row['image'], "places");
+  
+  $row['link'] = '?page=friendprofile&pid='.$row['id'];
+  $row['description'] = $row['usp_city'].", ".$db->select_one("SELECT printable_name FROM country WHERE iso = '".$row['usp_country']."'");
+  $mutualFriends = $db->select_one("SELECT COUNT(1) FROM userfriends
+                                    WHERE acc_id = ".$_SESSION['loggeduser']['id']." AND usf_id IN
+                                    (SELECT usf_id FROM userfriends WHERE acc_id = ".$row['id'].")");
+  if ($mutualFriends > 0) {
+    $row['statistic'] = $mutualFriends.' mutual friends.';  
+  } else {
+    $row['statistic'] = '';
+  }
+  $row['dataType'] = 'friend';
+  array_push($return, $row);
+}
+
+mysql_free_result($result);
+if (!isset($GET_q)) {
+  die(json_encode($return));
+}
+
+//Second case - places
+$result = $db->select("SELECT DISTINCT id, name, image, pla_city, pla_country,
+               (CASE confirmed
+                    WHEN  0 THEN 0                    
+                    WHEN  1 THEN 50                    
+                    WHEN  2 THEN 100                    
+                    WHEN  3 THEN 150                    
+                    WHEN  4 THEN 200
+                    ELSE 200
+                    END)+
+                    (CASE my_event
+                    WHEN '0' THEN 0
+                    ELSE 5000
+                    END)+
+                    (CASE placeinfo.pla_city
+                    WHEN '".$_SESSION['ipdata']['City']."' THEN 1000
+                    ELSE 0
+                    END)+
+                    (CASE bus_promoday
+                    WHEN 1 THEN 100
+                    ELSE 0
+                    END)+                    
+                    (CASE pre_rating_average
+                    WHEN 1 THEN 50
+                    WHEN 2 THEN 100
+                    WHEN 3 THEN 200
+                    WHEN 4 THEN 400
+                    WHEN 5 THEN 800
+                    ELSE 0
+                    END)+
+                    (CASE rev_average
+                    WHEN 1 THEN 50
+                    WHEN 2 THEN 100
+                    WHEN 3 THEN 200
+                    WHEN 4 THEN 400
+                    WHEN 5 THEN 800
+                    ELSE 0
+                    END)+
+                    (CASE my_review
+                    WHEN 1 THEN 25
+                    WHEN 2 THEN 50
+                    WHEN 3 THEN 100
+                    WHEN 4 THEN 200
+                    WHEN 5 THEN 400
+                    ELSE 0
+                    END) AS relevance
+FROM (SELECT DISTINCT placereview.rev_rating AS my_review, pre_rating, placeinfo.cat_id AS place_cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, my_event, pre_rating_average, rev_average, COUNT(reply_event) AS confirmed
+     FROM (SELECT DISTINCT IFNULL(pre_rating, 0) AS pre_rating, placeinfo.cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, eve_id, IFNULL(eve_name,0) AS my_event, ROUND(IFNULL(AVG(pre_rating),0)) AS pre_rating_average, ROUND(IFNULL(AVG(rev_rating),0)) AS rev_average
+          FROM (SELECT DISTINCT cat_id, cat_name, place.pla_id AS id, place.pla_name AS name, place.pla_photo AS image, place.pla_city, place.pla_country
+               FROM place,placetags,  category
+               WHERE place.pla_id = placetags.pla_id
+               AND place.pla_city = '".$_SESSION['ipdata']['City']."'
+               AND category.cat_name = placetags.plt_tag
+               AND (placetags.plt_tag = '".$q."'
+               OR place.pla_description LIKE '%".$q."%'
+               OR place.pla_name LIKE '%".$q."%')) as placeinfo
+          LEFT JOIN userpreferences ON userpreferences.cat_id = placeinfo.cat_id AND userpreferences.acc_id = '".$_SESSION['loggeduser']['id']."'
+          LEFT JOIN businesstime ON businesstime.pla_id = id AND businesstime.bus_day = '".date("l")."'
+          LEFT JOIN events ON events.pla_id = id AND events.acc_id = '".$_SESSION['loggeduser']['id']."'
+          LEFT JOIN placereview ON placereview.pla_id = id
+          GROUP BY id)placeinfo
+     LEFT JOIN userevent ON userevent.id_eve = eve_id AND userevent.reply_event = 'Yes'     
+     LEFT JOIN placereview ON placereview.pla_id = id AND placereview.acc_id = '".$_SESSION['loggeduser']['id']."'
+     GROUP BY id) placeinfo     
+ORDER BY relevance DESC
+LIMIT 9");
+}else{
+  		$q = mysql_real_escape_string(str_replace("%", "", $GET_q));
+  		$return = Array();
+  		$result = $db->select("SELECT DISTINCT cat_id, cat_name, place.pla_id AS id, place.pla_name AS name, place.pla_photo AS image, place.pla_city, place.pla_country
+               FROM place,placetags,  category
+               WHERE place.pla_id = placetags.pla_id
+               AND place.pla_city = '".$_SESSION['ipdata']['City']."'
+               AND category.cat_name = placetags.plt_tag
+               AND (placetags.plt_tag = '".$q."'
+               OR place.pla_description LIKE '%".$q."%'
+               OR place.pla_name LIKE '%".$q."%')");
+}
+while($row = $db->get_row($result)) {
+  $row['image'] = urlimage($row['image'], "places");
+    
+  $row['link'] = '?page=placeprofile&pid='.$row['id'];
+  $row['description'] = $row['pla_city'].", ".$db->select_one("SELECT printable_name FROM country WHERE iso = '".$row['pla_country']."'");
+  $row['statistic'] = '';
+  $row['dataType'] = 'place';
+  array_push($return, $row);
+}
+//print_r($return);
+
+mysql_free_result($result);
+
+//Response
+echo json_encode($return);
+
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "getSuggestions") {
+  die("<script>window.location='../?'</script>");
+}
+
+if (!isset($_SESSION['loggeduser']['lastsuggestion'])) {
+  $_SESSION['loggeduser']['lastsuggestion']['acc_id'] = 0;
+}
+
+//Performs the search
+
+$result = $db->select("SELECT DISTINCT userprofile.acc_id, userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname
+                       FROM userfriends,userprofile 
+                       WHERE userfriends.acc_id = ".$_SESSION['loggeduser']['id']."
+                       AND userprofile.acc_id IN
+                        (SELECT usf_id
+                        FROM userfriends
+                        WHERE usf_id NOT IN
+                          (SELECT usf_id FROM userfriends
+                           WHERE acc_id = ".$_SESSION['loggeduser']['id'].")
+                           AND usf_id != ".$_SESSION['loggeduser']['id']."
+                           AND usf_status = 'Accepted'
+                           GROUP BY usf_id)
+                       ORDER BY rand() LIMIT 30");            
+$return = array();
+
+while ($linha = $db->get_row($result)) {
+  $linha['usp_photo'] = urlimage($linha['usp_photo'], "user");
+  //Mutual friends
+  $mutualFriends = $db->select_one("SELECT COUNT(1) FROM userfriends
+                                    WHERE acc_id = ".$_SESSION['loggeduser']['id']." AND usf_id IN
+                                    (SELECT usf_id FROM userfriends WHERE acc_id = ".$linha['acc_id'].")");
+  $linha['mutual_friends'] = $mutualFriends;
+  //Action
+  $linha['action_icon'] = 'images/icons/icon_addnewfocus.png';
+  $linha['action'] = 'Add as a friend';
+  $linha['acc_id'] = trim($linha['acc_id'],0);
+  $linha['action_link'] = 'javascript:wtd.friends.addFriend('.$linha['acc_id'].')';
+  array_push($return, $linha);
+} 
+//print_r($return);
+mysql_free_result($result);
+
+$result = $db->select("SELECT DISTINCT userprofile.acc_id, usp_photo, usp_firstname, usp_lastname
+                       FROM userprofile, userpreferences
+                       WHERE userprofile.acc_id = userpreferences.acc_id
+                       AND userpreferences.cat_id IN
+                          (SELECT cat_id
+                          FROM userpreferences
+                          WHERE pre_rating = (
+                          SELECT MAX( pre_rating )FROM userpreferences )
+                          AND acc_id =".$_SESSION['loggeduser']['id']."
+                          ORDER BY rand())
+                       AND pre_rating > 4
+                       AND userprofile.acc_id != ".$_SESSION['loggeduser']['id']."
+                       AND userprofile.acc_id NOT IN
+                          (SELECT acc_id
+                          FROM userfriends
+                          WHERE usf_id = ".$_SESSION['loggeduser']['id'].")
+                          ");
+while ($linha = $db->get_row($result)) {
+    $linha['usp_photo'] = urlimage($linha['usp_photo'], "user");
+  
+  
+  $catchUp = $db->select_one("SELECT COUNT(1) FROM userfriends
+                                    WHERE acc_id = ".$_SESSION['loggeduser']['id']." AND usf_id IN
+                                    (SELECT usf_id FROM userfriends WHERE acc_id = ".$linha['acc_id'].")");
+  $linha['mutual_friends'] = $catchUp;
+  //Action
+  $linha['action_icon'] = 'images/icons/icon_addnew.png';
+  $linha['action'] = 'Catch up on Whatoodo';
+  $linha['action_link'] = '?page=friendprofile&pid='.$linha['acc_id'];
+  array_push($return, $linha);
+} 
+mysql_free_result($result);
+
+header('Content-Type: text/json; charset=UTF-8');
+echo json_encode($return);
+?><?php
+header('Content-Type: text/json; charset=UTF-8');
+//Raw protection
+if (!$GET_service || $GET_service != "goEvent") {
+	die("<script>window.location='../?'</script>");
+}
+//Gets message data and verifies if the user can read this message
+if (!isset($_SESSION['loggeduser']['id'])) {
+  die("<script>window.location='./?'</script>");
+}
+
+$event = mysql_real_escape_string($POST_event);
+$user = $_SESSION['loggeduser']['id'];
+
+
+$db->begin();
+$result = $db->insert_sql("INSERT INTO `userevent` (`id_eve`, `acc_id`, `reply_event`) VALUES ('".$event."', '".$user."', 'yes')");
+$usergo = $db->select_one("SELECT COUNT(1) FROM userevent WHERE id_eve = '".$event."' AND reply_event = 'yes' ");
+$usergo += 1;
+$result2 = $db->update_sql("UPDATE events SET eve_go = '".$usergo."' WHERE eve_id = '".$event."' ");
+
+$result1 = $db->insert_sql("INSERT INTO `news` (`new_type`,`new_mention`,`acc_id`)
+							VALUES('Event','".$event."','".$_SESSION['loggeduser']['id']."')");
+
+if ($result) {
+    $db->commit();
+	  die(json_encode(Array("status" => "OK")));
+} else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+}
+?><?php 
+	if (!$GET_service || $GET_service != "inviteFriends") {
+	die("<script>window.location='../?'</script>");
+}
+
+if (!isset($_SESSION['loggeduser']) || $_SESSION['loggeduser']['id'] == "") {
+	die("<script>window.location='./?'</script>");
+}
+header('Content-Type: text/json; charset=UTF-8');
+require_once('../library/class.phpmailer.php');
+
+$friends = $_POST['friends'];
+
+$event = $_POST['event'];
+
+$eventname = $db->select("SELECT eve_name, eve_photo, eve_id FROM events WHERE eve_id = '".$event."' ");
+$eventname = $db->get_row($eventname);
+
+$values = "";
+$i = 0;
+while ($i < sizeof($friends)) {
+	if($friends[$i] != 0){
+		$values .= "('".$event."','".$friends[$i]."','invited'), ";
+		$usermail = $db->select("SELECT acc_email FROM useraccount WHERE acc_id = '".$friends[$i]."' ");
+		$usermail = $db->get_row($usermail);
+		$email = $usermail['acc_email'];
+		$info = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$friends[$i]."' ");
+		$info = $db->get_row($info);
+		$userowner = $db->select("SELECT usp_firstname, usp_lastname FROM userprofile WHERE acc_id = '".$_SESSION['loggeduser']['id']."'");
+		$userowner = $db->get_row($userowner);
+		
+		/*Send Mail*/
+		$mail = new PHPMailer();
+  
+  		$mail->IsSMTP();
+  		$mail->SMTPSecure = "tls"; // set mailer to use SMTP
+  		$mail->Host = MailHost();  // specify main and backup server
+  		$mail->SMTPAuth = true; // turn on SMTP authentication
+  		$mail->Username = MailUser();  // SMTP username
+  		$mail->Password = MailPasswd(); // SMTP password
+  		$mail->From = "whatoodo@whatoodo.com";
+  		$mail->FromName = "Invite to event";
+		$mail->IsHTML(true);
+  		$mail->AddAddress($email);
+  
+  		$mail->Subject = "Whatoodo party";
+  		$mail->Body    = "<div class='main-container' style='width: 512px; border: 1px solid;'>
+  								<div class='header' style='width: 512px; height: 55px; background-color: purple; '>
+  									<div class='image-logo' style=''>
+  											<img src='http://www.whatoodo.com/images/icons/brand.png'/>
+  									</div>		
+  								</div>
+  								<div class='image-profile' style='float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'>
+  											<img src='http://images.whatoodo.com/images/events/".$eventname['eve_photo']."' style='margin-top: 20px; margin-right: 10px; float: left; width: 40px; height: 40px; margin-left: 10px; display: inline-block;'/>
+  								</div>
+  								<div class='text' style='display: inline-block; margin-left: 20px; margin-top: 20px;'>
+										Hi ".$info['usp_firstname'].' '.$info['usp_lastname']."<br/><br/><br/>
+										 ".$userowner['usp_firstname'].' '.$userowner['usp_lastname']." has invited you to have fun with him at ".$eventname['eve_name']."<br/>
+										 Follow the link below to confirm and enjoy it!<br/><br/><br/>
+										 <a href='http://www.whatoodo.com/?page=profileevent&eveid=".$eventname['eve_id']."'>Whatoodo Events</a><br/><br/><br/>
+										 
+										 Whatoodo<br/>
+										 Lot's of thing out there!
+										 
+								</div>
+  						</div>";
+  		//Hi ".$info['usp_firstname'].' '.$info['usp_lastname']." you was invited to ".$eventname['eve_name'];
+  
+  		if(!$mail->Send()) {
+     		echo "Message could not be sent. <p>";
+     		echo "Mailer Error: " . $mail->ErrorInfo;
+     		exit;
+  		}
+	}
+	$i++;
+}
+$values = substr($values, 0, -2);
+if ($i == 0) { $values = ""; }
+
+$result2 = $db->insert_sql("INSERT INTO `userevent`(`id_eve`, `acc_id`, `reply_event`) VALUES ".$values.";");
+
+if ($result2) {
+		$db->commit();
+		//die("<script>window.location='?page=profileevent&eveid=64'</script>");
+		die(json_encode(Array("status" => $result2)));
+		//die(json_encode(Array("event" => $result1)));
+	} else {
+		$db->rollback();
+		die(json_encode(Array("status" => "ERROR")));
+	}
+
+
+	
+	
+?><?php
+header('Content-Type: text/json; charset=UTF-8');
+//Raw protection
+if (!$GET_service || $GET_service != "leaveEvent") {
+	die("<script>window.location='../?'</script>");
+}
+//Gets message data and verifies if the user can read this message
+if (!isset($_SESSION['loggeduser']['id'])) {
+  die("<script>window.location='./?'</script>");
+}
+
+$event = mysql_real_escape_string($POST_event);
+$user = $_SESSION['loggeduser']['id'];
+
+
+$db->begin();
+$result = $db->delete_sql("DELETE FROM userevent WHERE id_eve = '".$event."' AND acc_id = '".$user."'");
+
+if ($result) {
+    $db->commit();
+	  die(json_encode(Array("status" => "OK")));
+} else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+}
+?><?php
+//Raw protection 
+if (!$GET_service || $GET_service != "likePlace" || !$_SESSION['loggeduser']['id']) {
+  die("<script>window.location='../?'</script>");
+}
+header('Content-Type: text/json; charset=UTF-8');
+
+//Gathers data
+$place = mysql_escape_string($_POST['place']);
+
+$db->begin();
+$result1 = $db->insert_sql("INSERT INTO `likeplace` (`acc_id`,`pla_id`)
+							VALUES('".$_SESSION['loggeduser']['id']."','".$place."')");
+
+$result1 = $db->insert_sql("INSERT INTO `news` (`new_type`,`new_inReplyTo`,`acc_id`)
+							VALUES('Like','".$place."','".$_SESSION['loggeduser']['id']."')");
+
+if ($result1) {
+	$db->commit();
+	echo json_encode("{ 'status' : 'OK' }");
+} else {
+	$db->rollback();
+	echo json_encode("{ 'status' : 'ERROR' }");
+}	
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "noPresence") {
+	die("<script>window.location='../?'</script>");
+}
+if (!isset($_SESSION['loggeduser']['id'])) {
+  die("<script>window.location='./?'</script>");
+}
+
+header('Content-Type: text/json; charset=UTF-8');
+
+$author = $_SESSION['loggeduser']['id'];
+$event = mysql_real_escape_string($POST_event);
+
+$result = $db->update_sql("UPDATE userevent SET reply_event = 'no' WHERE acc_id = '".$author."' AND id_eve = '".$event."'");
+                           
+if ($result) {
+    $db->commit();
+	echo json_encode("{ 'status' : 'OK' }");
+} else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+}
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "placeAdd" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+//Beggining on the validations
+$name = mysql_real_escape_string($_POST["placename"]);
+$description = mysql_real_escape_string($_POST["description"]);
+$address = mysql_real_escape_string($_POST["address"]);
+$city = mysql_real_escape_string($_POST["city"]);
+$state = mysql_real_escape_string($_POST["state"]);
+$country = mysql_real_escape_string($_POST["country"]);
+//Data from checkboxes
+$parking = mysql_real_escape_string($_POST["parking"]);
+$accessible = mysql_real_escape_string($_POST["accessible"]);
+$delivery = mysql_real_escape_string($_POST["delivery"]);
+$smoking = mysql_real_escape_string($_POST["smoking"]);
+$livemusic = mysql_real_escape_string($_POST["livemusic"]);
+$playroom = mysql_real_escape_string($_POST["playroom"]);
+$wifi = mysql_real_escape_string($_POST["wifi"]);
+$waiter = mysql_real_escape_string($_POST["waiter"]);
+$reservation = mysql_real_escape_string($_POST["reservation"]);
+
+$cost = mysql_real_escape_string($_POST["mediumcost"]);
+//$days, $starthours and $endhours are arrays
+$days = $_POST["days"];
+$starthours = $_POST["start"];
+$endhours = $_POST["end"];
+$promodays = $_POST["promodays"];
+
+$phone1 = mysql_real_escape_string($_POST["phone"]);
+$phone2 = mysql_real_escape_string($_POST["cellphone"]);
+$twitter = mysql_real_escape_string($_POST["twitter"]);
+$website = mysql_real_escape_string($_POST["website"]);
+$cards = $_POST["cards"];
+$email = mysql_real_escape_string($_POST["email"]);
+$category = mysql_real_escape_string($_POST["placecategory"]);
+$subcategories = $_POST["subcategory"];
+$othercategories = $_POST["othercategories"];
+$division = explode(" ",$othercategories);
+
+$allcategories = array_merge($division, $subcategories);
+//$tags = ""
+//for ($i = 0; ){
+//  explode(" ", str_replace(",", " ",$_POST["place-tags"]));
+//}
+// if (!$name || !$description || !$city || !$state || !$country) {
+// 	error("One or more fields are empty!");
+// 	return;
+// }
+// //Valida país
+// $result = $db->select_one("SELECT printable_name FROM country WHERE iso = '".$country."'");
+// if ($result == "" || !$result) {
+// 	error("Invalid country!");
+// 	return;
+// }
+// //Código para manejar a Foto
+// if ($photo['name']) {
+// 	$dir="uploads/places/";
+// 	if (!in_array(end(explode(".", $photo['name'])), $CONFIG_image_allowed_extensions)) {
+// 		error("Invalid file format!");
+// 		return;
+// 	}
+// 	if (($photo['size'] / 1024) > $CONFIG_max_thumb_photo_size) {
+// 		error("Photo cannot exceed 700Kb!");
+// 		return;
+// 	}
+// 	$imagespecs = getimagesize($photo['tmp_name']);
+// 	$imagewidth = $imagespecs[0];
+// 	$imageheight = $imagespecs[1];
+// 	if ($imagewidth > $CONFIG_max_thumb_photo_width || $imageheight > $CONFIG_max_thumb_photo_height) {
+// 		error("Image dimensions are too big.");
+// 		return;
+// 	}
+// }
+ 
+$db->begin();
+$result1 = $db->insert_sql("INSERT INTO `place` (`pla_name`, `pla_description`, `pla_address`, `pla_city`, `pla_state`, `pla_country`, `pla_cost`, `pla_telephone1`, `pla_telephone2`, `pla_website`, `pla_email`, `pla_twitter`, `pla_hasParking`, `pla_hasWChairAccess`, `pla_hasDelivery`, `pla_hasSmoking`, `pla_hasPlayroom`, `pla_hasWifi`, `pla_hasWaiter`, `pla_hasReservation`, `pla_hasLiveMusic`, `acc_id`)
+                                        VALUES ('".$name."', '".$description."', '".$address."', '".$city."', '".$state."', '".$country."', '".$cost."', '".$phone1."', '".$phone2."', '".$website."', '".$email."', '".$twitter."', '".$parking."', '".$accessible."', '".$delivery."', '".$smoking."', '".$playroom."', '".$wifi."', '".$waiter."', '".$reservation."', '".$livemusic."','".$_SESSION['loggeduser']['id']."');");
+
+//if (isset($photo)) {
+  //Upload photo
+//  $ftp = new ClsFTP($CONFIG_ftp_user, $CONFIG_ftp_pass, $CONFIG_ftp_host, $CONFIG_ftp_port);
+//  $ftp->cd($CONFIG_ftp_dir.$CONFIG_image_path_places);
+  //Nomear a foto
+//	$photoname = time() . "_" . $result1 . "_n." . end(explode(".", $photo['name']));
+	//Fazer upload
+//  $ftp->put($photoname, $photo['tmp_name']);
+  //Gravar em banco
+//	$result1b = $db->update_sql("UPDATE `place` SET `pla_photo` = '".$photoname."' WHERE `pla_id` = '".$result1."'");
+//}
+
+$i = 0;
+$values = "";
+while ($i < sizeof($allcategories)) {
+	if ($allcategories[$i] != "") {
+		$values .= ", (".$result1.", '". strtolower($allcategories[$i]) ."')";
+	}
+	$i++;
+}
+if ($i == 0) { $values = ""; }
+$result2 = $db->insert_sql("INSERT INTO `placetags` (`pla_id`, `plt_tag`) VALUES (".$result1.", '". strtolower($category) ."')".$values.";");
+
+$i = 0;
+$values = "";
+while ($i < sizeof($days)) {
+  if ($i == 0 ){
+    $values .= "(".$result1.", '". $days[$i] ."', '". $starthours[$i] ."', '". $endhours[$i] ."', '". $promodays[$i] ."')";
+  }else{
+    $values .= ", (".$result1.", '". $days[$i] ."', '". $starthours[$i] ."', '". $endhours[$i] ."', '". $promodays[$i] ."')";
+  }
+  $i++;
+}
+
+$result3 = $db->insert_sql("INSERT INTO `businesstime` (`pla_id`, `bus_day`, `bus_start`, `bus_end`, `bus_promoday`) VALUES ".$values.";");
+
+$i = 0;
+$values = "";
+while ($i < sizeof($cards)) {
+  if ($i == 0 ){
+    $values .= "(".$result1.", '". $cards[$i] ."')";
+  }else{
+    $values .= ", (".$result1.", '". $cards[$i] ."')";
+  }
+  $i++;
+}
+
+$result4 = $db->insert_sql("INSERT INTO `placepaymethod` (`pla_id`, `pla_pay`) VALUES ".$values.";");
+if ($result1 && $result2 && $result3 && $result4) {
+    $db->commit();
+    die(json_encode(Array("status" => "OK")));
+  } else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+  }
+
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "placeEdit" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+//Beggining on the validations
+$placeid = $_POST["placeid"];
+$name = mysql_real_escape_string($_POST["placename"]);
+$description = mysql_real_escape_string($_POST["description"]);
+//$photo = $_FILES["place-photo"];
+$address = mysql_real_escape_string($_POST["address"]);
+$city = mysql_real_escape_string($_POST["city"]);
+$state = mysql_real_escape_string($_POST["state"]);
+$country = mysql_real_escape_string($_POST["country"]);
+//Data from checkboxes
+$parking = mysql_real_escape_string($_POST["parking"]);
+$accessible = mysql_real_escape_string($_POST["accessible"]);
+$delivery = mysql_real_escape_string($_POST["delivery"]);
+$smoking = mysql_real_escape_string($_POST["smoking"]);
+$livemusic = mysql_real_escape_string($_POST["livemusic"]);
+$playroom = mysql_real_escape_string($_POST["playroom"]);
+$wifi = mysql_real_escape_string($_POST["wifi"]);
+$waiter = mysql_real_escape_string($_POST["waiter"]);
+$reservation = mysql_real_escape_string($_POST["reservation"]);
+
+$cost = mysql_real_escape_string($_POST["mediumcost"]);
+//$days, $starthours and $endhours are arrays
+$days = $_POST["days"];
+$starthours = $_POST["start"];
+$endhours = $_POST["end"];
+$promodays = $_POST["promodays"];
+
+$phone1 = mysql_real_escape_string($_POST["phone"]);
+$phone2 = mysql_real_escape_string($_POST["cellphone"]);
+$twitter = mysql_real_escape_string($_POST["twitter"]);
+$website = mysql_real_escape_string($_POST["website"]);
+$cards = $_POST["cards"];
+$email = mysql_real_escape_string($_POST["email"]);
+$category = mysql_real_escape_string($_POST["placecategory"]);
+$subcategories = $_POST["subcategory"];
+$othercategories = $_POST["othercategories"];
+$division = explode(" ",$othercategories);
+
+$allcategories = array_merge($division, $subcategories);
+//$tags = ""
+//for ($i = 0; ){
+//  explode(" ", str_replace(",", " ",$_POST["place-tags"]));
+//}
+// if (!$name || !$description || !$city || !$state || !$country) {
+// 	error("One or more fields are empty!");
+// 	return;
+// }
+// //Valida país
+// $result = $db->select_one("SELECT printable_name FROM country WHERE iso = '".$country."'");
+// if ($result == "" || !$result) {
+// 	error("Invalid country!");
+// 	return;
+// }
+// //Código para manejar a Foto
+// if ($photo['name']) {
+// 	$dir="uploads/places/";
+// 	if (!in_array(end(explode(".", $photo['name'])), $CONFIG_image_allowed_extensions)) {
+// 		error("Invalid file format!");
+// 		return;
+// 	}
+// 	if (($photo['size'] / 1024) > $CONFIG_max_thumb_photo_size) {
+// 		error("Photo cannot exceed 700Kb!");
+// 		return;
+// 	}
+// 	$imagespecs = getimagesize($photo['tmp_name']);
+// 	$imagewidth = $imagespecs[0];
+// 	$imageheight = $imagespecs[1];
+// 	if ($imagewidth > $CONFIG_max_thumb_photo_width || $imageheight > $CONFIG_max_thumb_photo_height) {
+// 		error("Image dimensions are too big.");
+// 		return;
+// 	}
+// }
+ 
+$db->begin();
+$result1 = $db->update_sql("UPDATE `place` 
+                            SET pla_name='".$name."', pla_description='".$description."', pla_address='".$address."', pla_city='".$city."', pla_state='".$state."', pla_country='".$country."', pla_cost='".$cost."', pla_telephone1='".$phone1."', pla_telephone2='".$phone2."', pla_website='".$website."', pla_email='".$email."', pla_twitter='".$twitter."', pla_hasParking='".$parking."', pla_hasWChairAccess='".$accessible."', pla_hasDelivery='".$delivery."', pla_hasSmoking='".$smoking."', pla_hasPlayroom='".$playroom."', pla_hasWifi='".$wifi."', pla_hasWaiter='".$waiter."', pla_hasReservation='".$reservation."', pla_hasLiveMusic='".$livemusic."', acc_id='".$_SESSION['loggeduser']['id']."'
+                            WHERE pla_id=$placeid");
+//if (isset($photo)) {
+  //Upload photo
+//  $ftp = new ClsFTP($CONFIG_ftp_user, $CONFIG_ftp_pass, $CONFIG_ftp_host, $CONFIG_ftp_port);
+//  $ftp->cd($CONFIG_ftp_dir.$CONFIG_image_path_places);
+  //Nomear a foto
+//	$photoname = time() . "_" . $result1 . "_n." . end(explode(".", $photo['name']));
+	//Fazer upload
+//  $ftp->put($photoname, $photo['tmp_name']);
+  //Gravar em banco
+//	$result1b = $db->update_sql("UPDATE `place` SET `pla_photo` = '".$photoname."' WHERE `pla_id` = '".$result1."'");
+//}
+
+$i = 0;
+$values = "";
+while ($i < sizeof($allcategories)) {
+	if ($allcategories[$i] != "") {
+		$values .= ", ($placeid, '". strtolower($allcategories[$i]) ."')";
+	}
+	$i++;
+}
+if ($i == 0) { $values = ""; }
+$result2 = $db->update_sql("DELETE FROM `placetags`
+                            WHERE pla_id=$placeid");
+$result2 = $db->insert_sql("INSERT INTO `placetags` (`pla_id`, `plt_tag`) VALUES ($placeid, '". strtolower($category) ."')".$values.";");
+$i = 0;
+$values = "";
+while ($i < sizeof($days)) {
+  if ($i == 0 ){
+    $values .= "($placeid, '". $days[$i] ."', '". $starthours[$i] ."', '". $endhours[$i] ."', '". $promodays[$i] ."')";
+  }else{
+    $values .= ", ($placeid, '". $days[$i] ."', '". $starthours[$i] ."', '". $endhours[$i] ."', '". $promodays[$i] ."')";
+  }
+  $i++;
+}
+
+$result3 = $db->update_sql("DELETE FROM `businesstime`
+                            WHERE pla_id=$placeid");
+$result3 = $db->insert_sql("INSERT INTO `businesstime` (`pla_id`, `bus_day`, `bus_start`, `bus_end`, `bus_promoday`) VALUES ".$values.";");
+$i = 0;
+$values = "";
+while ($i < sizeof($cards)) {
+  if ($i == 0 ){
+    $values .= "($placeid, '". $cards[$i] ."')";
+  }else{
+    $values .= ", ($placeid, '". $cards[$i] ."')";
+  }
+  $i++;
+}
+$result4 = $db->update_sql("DELETE FROM `placepaymethod`
+                            WHERE pla_id=$placeid");
+
+$result4 = $db->insert_sql("INSERT INTO `placepaymethod` (`pla_id`, `pla_pay`) VALUES ".$values.";");
+if ($result1 && $result2 && $result3 && $result4) {
+    $db->commit();
+    die(json_encode(Array("status" => "OK")));
+  } else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+  }
+
+?><?php
+header('Content-Type: text/json; charset=UTF-8');
+//Raw protection
+if (!$GET_service || $GET_service != "rejectRequest") {
+	die("<script>window.location='../?'</script>");
+}
+//Gets message data and verifies if the user can read this message
+if (!isset($_SESSION['loggeduser']['id'])) {
+  die("<script>window.location='./?'</script>");
+}
+
+if ($POST_accid == "") {
+  die(json_encode(Array("status" => "ERROR", "errormsg" => "No request to accept." )));
+}
+$accid = mysql_real_escape_string($POST_accid);
+if (!$db->select_one("SELECT usf_id FROM userfriends WHERE acc_id = $accid AND usf_id = ".$_SESSION['loggeduser']['id'].' AND usf_status = "Invited"')) {
+  die(json_encode(Array("status" => "ERROR", "errormsg" => "You don't have permission to do that." )));
+}
+
+$db->begin();
+$result = $db->update_sql("UPDATE userfriends
+                           SET usf_status = 'Ignored'
+                           WHERE acc_id = $accid AND usf_id = ".$_SESSION['loggeduser']['id']);
+
+if ($result) {
+    $db->commit();
+    $pendingFriends = $db->select_one('SELECT COUNT(usf_id) FROM userfriends WHERE userfriends.usf_id = '.$_SESSION['loggeduser']['id'].' AND userfriends.usf_status = "Invited"');
+	  die(json_encode(Array("status" => "OK", "pendingFriends" => $pendingFriends)));
+} else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+}
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "setLocation") {
+  die("<script>window.location='../?'</script>");
+} 
+header('Content-Type: text/json; charset=UTF-8');
+//Get the parameters
+if (isset($POST_data)) {
+	$_SESSION['ipdata']['City'] = $POST_data['City'];
+  $_SESSION['ipdata']['RegionName'] = $POST_data['RegionName'];
+  // $_SESSION['ipdata']['RegionCode'] = $POST_data['RegionCode'];
+  $_SESSION['ipdata']['CountryCode'] = $POST_data['CountryCode'];
+  $_SESSION['ipdata']['CountryName'] = $POST_data['CountryName'];
+  unset($_SESSION['wheaterdata']);
+  $response = file_get_contents('http://www.worldweatheronline.com/feed/weather.ashx?q='.urlencode($_SESSION['ipdata']['City']).','.urlencode($_SESSION['ipdata']['CountryName']).'&format=json&num_of_days=2&key=b09a05408b192246101812');
+  $_SESSION['wheaterdata'] = json_decode($response, true);
+  if (!isset($_SESSION['wheaterdata']['data'])) {
+    $_SESSION['wheaterdata'] = json_decode('{ "data": { "current_condition": [ {"cloudcover": "50", "humidity": "66", "observation_time": "08:29 PM", "precipMM": "3.7", "pressure": "1006", "temp_C": "31", "temp_F": "88", "visibility": "10", "weatherCode": "356", "weatherDesc": [ {"value": "Moderate or heavy rain shower" } ], "weatherIconUrl": [ {"value": "http:\/\/www.worldweatheronline.com\/images\/wsymbols01_png_64\/wsymbol_0010_heavy_rain_showers.png" } ], "winddir16Point": "SE", "winddirDegree": "130", "windspeedKmph": "7", "windspeedMiles": "4" } ], "request": [ {"query": "201.75.100.140", "type": "IP" } ], "weather": [ {"date": "2010-12-18", "precipMM": "20.4", "tempMaxC": "29", "tempMaxF": "84", "tempMinC": "22", "tempMinF": "71", "weatherCode": "356", "weatherDesc": [ {"value": "Moderate or heavy rain shower" } ], "weatherIconUrl": [ {"value": "http:\/\/www.worldweatheronline.com\/images\/wsymbols01_png_64\/wsymbol_0010_heavy_rain_showers.png" } ], "winddir16Point": "NE", "winddirDegree": "52", "winddirection": "NE", "windspeedKmph": "4", "windspeedMiles": "2" }, {"date": "2010-12-19", "precipMM": "16.8", "tempMaxC": "30", "tempMaxF": "86", "tempMinC": "23", "tempMinF": "74", "weatherCode": "353", "weatherDesc": [ {"value": "Light rain shower" } ], "weatherIconUrl": [ {"value": "http:\/\/www.worldweatheronline.com\/images\/wsymbols01_png_64\/wsymbol_0009_light_rain_showers.png" } ], "winddir16Point": "NNE", "winddirDegree": "11", "winddirection": "NNE", "windspeedKmph": "6", "windspeedMiles": "4" } ] }}', true);
+  }
+  $time = explode(" ", $_SESSION['wheaterdata']['data']['current_condition'][0]['observation_time']);
+  if ($time[1] == "PM") {
+    if (substr($time[0], 0, 2) < 6) {
+       $time = "AM";
+    } else {
+       $time = "PM";
+    }
+  } else {
+    if (substr($time[0], 0, 2) < 6) {
+       $time = "PM";
+    } else {
+       $time = "AM";
+    }
+  }
+  if (isset($CONFIG_iconset[$_SESSION['wheaterdata']['data']['current_condition'][0]['weatherDesc'][0]['value']][$time])) {
+    $_SESSION['wheaterdata']['data']['current_condition'][0]['weatherIconUrl'][0]['value'] = $CONFIG_iconset[$_SESSION['wheaterdata']['data']['current_condition'][0]['weatherDesc'][0]['value']][$time];
+  } else {
+    $_SESSION['wheaterdata']['data']['current_condition'][0]['weatherIconUrl'][0]['value'] = str_replace("\\", "", $_SESSION['wheaterdata']['data']['current_condition'][0]['weatherIconUrl'][0]['value']);
+  }
+  $_SESSION['wheaterdata']['timeout'] = time();
+  $_SESSION['wheaterdata']['Status'] = "OK";
+  die(json_encode($_SESSION['wheaterdata']));
+}<?php
+header('Content-Type: text/json; charset=UTF-8');
+//Raw protection
+if (!$GET_service || $GET_service != "setApproval") {
+	die("<script>window.location='../?'</script>");
+}
+//Gets message data and verifies if the user can read this message
+if (!isset($_SESSION['loggeduser']['id'])) {
+  die("<script>window.location='./?'</script>");
+}
+
+$newid = $_POST['newid'];
+$approval = $_POST['approval'];
+
+$db->begin();
+if ($approval == 'undo'){
+  $result = $db->update_sql("DELETE FROM `newapproval` WHERE new_id = $newid AND acc_id = ".$_SESSION['loggeduser']['id']);
+}else{
+$result = $db->update_sql("DELETE FROM `newapproval` WHERE new_id = $newid AND acc_id = ".$_SESSION['loggeduser']['id']);
+$result = $db->insert_sql("INSERT INTO `newapproval` (`new_id`,`acc_id`,`approval`) VALUES ($newid, ".$_SESSION['loggeduser']['id'].", '$approval');");
+}
+if ($result) {
+    $db->commit();
+	  die(json_encode(Array("status" => "OK")));
+} else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+}
+?><?php 
+
+header('Content-Type: text/json; charset=UTF-8');
+//Raw protection
+
+if (!$GET_service || $GET_service != "setPhotoplacetitle" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+$title = $_POST['title'];
+$glp_id = $_POST['glp_id'];
+$gal_id = $_POST['gal_id'];
+
+$db->begin();
+$result2 = $db->update_sql("UPDATE `placephotos` SET plo_description='".$title."' WHERE glp_id='".$gal_id."' AND plo_id='".$glp_id."'");
+//$db->print_last_query();
+
+if ($result2) {
+	$db->commit();
+	echo json_encode("{ 'status' : 'OK' }");
+} else {
+	$db->rollback();
+	echo json_encode("{ 'status' : 'ERROR' }");
+}	
+?><?php 
+//Raw protection
+if (!$GET_service || $GET_service != "sharePlace" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+
+$place = $_POST['place'];
+$msg = $_POST['msg'];
+
+$db->begin();
+$result1 = $db->insert_sql("INSERT INTO `news` (`new_type`,`new_inReplyTo`,`acc_id`,`new_message`)
+							VALUES('Share','".$place."','".$_SESSION['loggeduser']['id']."','".$msg."')");
+							
+
+if ($result1) {
+	$db->commit();
+	echo json_encode("{ 'status' : 'OK' }");
+} else {
+	$db->rollback();
+	echo json_encode("{ 'status' : 'ERROR' }");
+}	
+?><?php
+
+if (!isset($_SESSION['loggeduser']['id'])) {
+  return;
+}
+
+$photo = mysql_real_escape_string($GET_glp_id);
+$address = $db->select("SELECT * FROM galleryphotos WHERE glp_id = '".$photo."'");
+$address = $db->get_row($address);
+//echo $address['glp_street'].", ".$address['glp_neighborhood'].", ".$address['glp_city'].", ".$address['glp_state'];
+
+?>
+
+<html> 
+<head> 
+<meta name="viewport" content="initial-scale=1.0, user-scalable=no"/> 
+<script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script> 
+<script type="text/javascript"> 
+  var geocoder;
+  var map;
+  var marker;
+  function gogogo() {
+    geocoder = new google.maps.Geocoder();
+    var latlng = new google.maps.LatLng(-34.397, 150.644);
+    var myOptions = {
+      zoom: 16,
+      center: latlng,
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+    }
+    map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+    if(marker != undefined) {
+	marker.setMap(null);
+        }
+    var address = <?php echo "'".$address['glp_street'].", ".$address['glp_neighborhood'].", ".$address['glp_city'].", ".$address['glp_state']."'";?>;
+    geocoder.geocode( { 'address': address}, function(results, status) {
+      if (status == google.maps.GeocoderStatus.OK) {
+        map.setCenter(results[0].geometry.location);
+        marker = new google.maps.Marker({
+            map: map, 
+            position: results[0].geometry.location
+        });
+      } 
+	//else {
+        //alert("Erro: " + status);
+        //}
+    });
+   }
+</script> 
+</head> 
+<body onload="gogogo()"> 
+<div id="map_canvas" style="height:90%;top:30px"></div> 
+</body> 
+</html> 

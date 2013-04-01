@@ -1,0 +1,24 @@
+<?php
+
+include_once 'rest_api/v1/config.php';
+include_once 'rest_api/v1/query.php';
+include_once 'rest_api/v1/utils.php';
+include_once 'rest_api/v1/ftp.php';
+
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+$key = mysql_escape_string($GET_key);
+
+$db->begin();
+$result = $db->update_sql("UPDATE useraccount SET acc_status = 'Verified' WHERE acc_verificationkey = '".$key."'");
+
+die("<script>window.location='http://www.whatoodo.com/'</script>");
+
+?>

@@ -1,0 +1,1700 @@
+var template = window.template || {};
+template = {
+	'content001' :  '<div class="content-top">'+
+						'<div id="timeline" class="timeline"></div>'+
+						'<div class="timeline-options">'+
+						'<input id="change-date-field" type="text" readonly="readonly" style="opacity: 0; cursor:default; width:10;"/>'+
+							'<div id="options-container" class="options">'+
+								'<a href="index.php?page=searchs&whatsup=4"><div class="whatsup"></div></a>'+
+								'<div id="other-date-button" class="otherdate"></div>'+
+							'</div>'+
+						'</div>'+						
+	                '</div>'+
+					'<div class="content-body">'+
+						'<div class="content-body-left">'+
+							//'<div class="home-hello-msg">'+
+							//	'<div class="close"></div>'+
+							//	'<div id="about">'+
+							//	'<div id="title">DISCOVERY NEW PLACES<div id="close-about"></div></div>'+
+							//	'<div id="line-1-big">Whatoodo</div>'+
+							//	'<div id="line-1-small"> is the easiest way to find the places where you ll have real fun </div>'+
+							//	'<div id="line-2-small">recommended by people like you!</div>'+
+							//	'<div id="container-second-line">'+
+							//	'<div id="line-3-big">Why?</div>'+
+							//	'<div id="line-3-small">Because we show you only the places you love! Or the places you will love! </div>'+
+							//	'<div id="line-4-small">Invite your friends and get invited by them to parties, concerts, movies, restaurants, bars! </div>'+
+							//	'</div>'+
+							//	'<div id="line-5-small">Whatoodo! Lots of things out there!</div>'+
+							//	'</div>'+
+							//'</div>'+
+							'<div id="box-list"></div>'+
+						'</div>'+
+						'<div class="content-body-right">'+
+							'<div id="box-login" class="box-login"></div>'+
+							'<div id="box-join" class="box-join"></div>'+                
+							'<div id="box-video" class="box-video"></div>'+
+						'</div>'+
+            		'</div>',
+					
+	'content002' : '<div class="content-left">'+
+	            		'<div id="box-img-profile" class="box-img-profile"></div>'+
+            			'<div id="box-menu-profile" class="box-menu-profile"></div>'+
+            			'<div id="box-img-friends" class="box-img-friends"></div>'+
+            	   '</div>'+
+        	       '<div id="content-right" class="content-right">'+
+				   		'<div id="content-right-top" class="content-right-top">'+
+							'<div id="timeline" class="timeline"></div>'+
+							'<div class="timeline-options">'+
+							'<input id="change-date-field" type="text" readonly="readonly" style="opacity: 0; cursor:default; width:10;"/>'+
+								'<div id="options-container" class="options">'+
+									'<a href="index.php?page=searchs&whatsup=4"><div class="whatsup"></div></a>'+
+									'<div id="other-date-button" class="otherdate"></div>'+
+									
+								'</div>'+
+							'</div>'+
+						'</div>'+
+            	        '<div id="content-right-left" class="content-right-left">'+
+							 '<div id="box-list"  class="box-list"></div>'+
+						'</div>'+
+                        '<div id="content-right-right" class="content-right-right">'+
+							'<div id="box-suggestions" class="box-suggestions"></div>'+
+							'<div id="box-advertising" class="box-advertising"></div>'+							
+						'</div>'+ 
+                   '</div>',
+             
+    'content003' : '<div class="content-left">'+
+    					'<div id="recommend-place" class="recommend-place"></div>'+
+    					'<div id="rate-this-place" class="rate-this-place"></div>'+
+	            		'<div id="box-img-profile" class="box-img-profile"></div>'+
+            			'<div id="box-menu-profile" class="box-menu-profile"></div>'+
+            			'<div id="box-img-friends" class="box-img-friends"></div>'+
+            	   '</div>'+
+        	       '<div id="content-right" class="content-right">'+
+				   		'<div id="content-right-top-place" class="content-right-top-place">'+
+							'<div id="timeline" class="timeline"></div>'+
+							'<div class="timeline-options">'+
+							'</div>'+
+						'</div>'+
+            	        '<div id="content-right-left" class="content-right-left">'+
+							 '<div id="box-list"  class="box-list"></div>'+
+						'</div>'+
+                        '<div id="content-right-right" class="content-right-right">'+
+							'<div id="box-suggestions" class="box-suggestions"></div>'+
+							'<div id="box-advertising" class="box-advertising"></div>'+							
+						'</div>'+ 
+                   '</div>',
+    'content004' : '<div class="content-left">'+
+	            		'<div id="box-img-profile" class="box-img-profile"></div>'+
+            			'<div id="box-menu-profile" class="box-menu-profile"></div>'+
+            			'<div id="box-img-friends" class="box-img-friends"></div>'+
+            	   '</div>'+
+        	       '<div id="content-right" class="content-right">'+
+            	        '<div id="content-right-left" class="content-right-left">'+
+							 '<div id="box-list"  class="box-list"></div>'+
+						'</div>'+
+                        '<div id="content-right-right" class="content-right-right">'+
+							'<div id="box-suggestions" class="box-suggestions"></div>'+
+							'<div id="box-advertising" class="box-advertising"></div>'+							
+						'</div>'+ 
+                   '</div>',
+     
+    'content005search' :
+    			   '<div class="content-left">'+
+            	   '</div>'+
+        	       '<div id="content-right" class="content-right">'+
+            	   		 '<div id="box-list" class="box-list"></div>'+
+            	   		 '<div id="box-list-loader" class="box-list-loader"></div>'+
+				   '</div>',            			
+					
+	'componentLogin' : '<div class="component-login">'+
+	          	       		
+						'</div>',
+	'componentRecommendPlace': 	'<div class="recommend-place-plc" id = "recommend-place-plc">'+
+										'<a class="share" href="#" id="share"><label>{RECOMMEND}</label></a>'+
+								'</div>',
+	'componentRatePlace': 	'<div class="rate-this-place" id="rate-this-place">'+
+										'<a class="rate" href="#" id="rate"><label>{RATE}</label></a>'+
+										'<div class="stars-rate">'+
+												'<span rate="0" id="ratings" style="float: right" class="rating"></span>'+
+										'</div>'+
+								'</div>',
+	'dialogNewMember' : '<div class="new-member-dialog" id="new-member-dialog">'+
+    						'<div class="inner">'+
+    							'<div class="dialog-header">'+
+    							'<h3>NEW MEMBER</h3>'+
+    							'<br>'+
+    							'<div class="close"></div>'+
+    							'</div>'+
+    							'<div class="dialog-content">'+
+        							'Please provide the information below'+
+        							'<br>'+
+        							'<br>'+
+        							'<form id="new-member-form">'+
+        							'<table>'+
+        							'<tr class="row"><td class="cell">Username</td><td class="cell">Password</td>'+
+        							'<tr class="row"><td class="cell"><input class="required input-field" type="text" id="newmember-username" minlength="5" ><label class="error" for="newmember-username" style="display: none" generated="true"></label></td><td class="cell"><input class="required input-field" type="password" id="newmember-password" minlength="4"></td>'+
+        							'<tr class="row"><td class="cell">E-mail</td><td class="cell">Retype password</td>'+
+        							'<tr class="row"><td class="cell"><input class="required email input-field" type="text" id="newmember-email" ></label><label class="error" for="newmember-email" style="display: none" generated="true"></label></td><td class="cell"><input class="required input-field" type="password" id="confirm-password" equalTo="#newmember-password" minlength="4" ></td>'+
+        							'<tr class="row"><td class="cell">Retype e-mail</td>'+
+        							'<tr class="row"><td class="cell"><input class="required email input-field" type="text" id="confirm-email" equalTo="#newmember-email"></td></tr>'+
+        							'</table>'+
+        							'</form>'+
+        							'<div class="confirm-container"><input type="submit" id="bt-confirm-member" class="button" value="SUBMIT"></div>'+
+    							'</div>'+
+    						'</div>'+
+						'</div>',
+						
+	'componentLoading' : '<div class="component-loading">'+
+							'<img src="style/img/3.gif" />'+
+                	  '</div>',
+                	  					
+	'componentJoin' : '<div class="component-join">'+
+							'<span class="title">New Member?</span>'+
+                            '<br>'+
+                    	    '<a id="btn-joinnow" class="btn_lilac">JOIN NOW</a>'+							
+                            //'<span class="connect">WANT USE FACEBOOK CONNECT</span>'+
+                            //'<a class="btn_facebook"></a>'+
+                            //'<a class="btn_twitter"></a>'+
+                	  '</div>',
+					  
+	'componentVideo' : '<div class="component-video">'+
+                    		'<span>What Is Whatoodo?</span><br>'+
+                            '<img src="style/img/video.jpg" />'+
+                       '</div>',
+     'middleComponent' : '<div class="box-list" id="box-list">'+
+     						'<div class="left-menu">'+
+     							'<div class="label-menu"><div class="comment-label" id="labels">{COMMENT}</div></div>'+
+     							'<div class="label-menu"><div class="settings-label" id="labels">{SETTINGS}</div></div>'+
+     							'<div class="label-menu"><div class="photo-label" id="labels">{PHOTO}</div></div>'+
+     							'<div class="label-menu"><div class="friends-label" id="labels">{FRIENDS}</div></div>'+
+     							'<div class="label-menu"><div class="events-label" id="labels">{EVENTS}</div></div>'+
+     							'<div class="label-menu"><div class="places-label" id="labels">{PLACES}</div></div>'+
+     						'</div>'+
+     						'<div class="middle-area-comment" id="area-comment">'+
+     						
+     						'</div>'+
+     						'<div class="middle-area-settings" id="area-settings">'+
+     						
+     						'</div>'+
+     						'<div class="middle-area-photo" id="area-photo">'+
+     						
+     						'</div>'+
+     						'<div class="middle-area-friends" id="area-friends">'+
+     						
+     						'</div>'+
+     						'<div class="middle-area-events" id="area-events">'+
+     						
+     						'</div>'+
+     						'<div class="middle-area-places" id="area-place">'+
+     						
+     						'</div>'+
+     					'</div>',		
+
+	'listItem' : {
+		Like : '<div id="{IID}" class="box-list-item" style="display:{DISPLAY}">'+
+                    	'<div class="content-image">'+
+                        	'<a href="index.php?page=pageprofile&uid={USERID}"><img src="{IMG}"/></a>'+
+                        '</div>'+
+                        '<div class="content-texto">'+
+                        	'<span class="name">{NAME}</span>'+
+                            '<span class="date">{DATE}</span>'+
+                            '<span class="texto"><img src="style/img/icons/icon_cora.png" style="vertical-align: middle"/>Likes {TEXT}</span>'+
+                            '<div>'+
+                                '<ul class="question-list">'+
+                                    //'<li>Eu Vou</li>'+
+                                    //'<li>Tô afim</li>'+
+                                    //'<li>Não vou</li>'+
+                                    //'<li> Ver Local</li>'+
+                                '</ul>'+
+                            '</div>'+
+                        '</div>'+
+                    '</div>',
+        Share : '<div id="{IID}" class="box-list-item" style="display:{DISPLAY}">'+
+                    	'<div class="content-image">'+
+                        	'<a href="index.php?page=pageprofile&uid={USERID}"><img src="{IMG}"/></a>'+
+                        '</div>'+
+                        '<div class="content-texto">'+
+                        	'<span class="name">{NAME}</span>'+
+                            '<span class="date">{DATE}</span>'+
+                            '<span class="texto"><img src="style/img/icons/Icons_links.png" style="vertical-align: middle"/>Recommends {TEXT}</span>'+
+                            '<div>'+
+                                '<ul class="question-list">'+
+                                    //'<li>Eu Vou</li>'+
+                                    //'<li>Tô afim</li>'+
+                                    //'<li>Não vou</li>'+
+                                    //'<li> Ver Local</li>'+
+                                '</ul>'+
+                            '</div>'+
+                        '</div>'+
+                    '</div>',
+        Event : '<div id="{IID}" class="box-list-item" style="display:{DISPLAY}">'+
+                    	'<div class="content-image">'+
+                        	'<a href="index.php?page=pageprofile&uid={USERID}"><img src="{IMG}"/></a>'+
+                        '</div>'+
+                        '<div class="content-texto">'+
+                        	'<span class="name">{NAME}</span>'+
+                            '<span class="date">{DATE}</span>'+
+                            '<span class="texto"><img src="style/img/icons/arrow_up.png" style="vertical-align: middle"/>Is going to {TEXT}</span>'+
+                            '<div>'+
+                                '<ul class="question-list">'+
+                                    //'<li>Eu Vou</li>'+
+                                    //'<li>Tô afim</li>'+
+                                    //'<li>Não vou</li>'+
+                                    //'<li> Ver Local</li>'+
+                                '</ul>'+
+                            '</div>'+
+                        '</div>'+
+                    '</div>'
+	},
+	'recoveryPass': '<div class="recovery">'+
+						'<div class="content-image">'+
+                        	'<img src="{IMG}"/>'+
+                        '</div>'+
+                        '<div class="content-texto">'+
+                        	'<span class="name">{NAME}</span><br/>'+
+                        	'<span class="date">{QUESTION}</span><br/>'+
+                        '</div>'+
+                        '<div class="button-confirm">'+
+                        	'<div class="button green" id="ndescription">Confirm?</div>'+
+                        '</div>'+
+					'</div>',
+	'recoveryPasscode': '<div class="recoverypasscode">'+
+                        '<div class="content-texto">'+
+                        	'<span class="name">{CODE}</span><br/>'+
+                        	'<input type="text" id="code" name="code"/>'+
+                        '</div>'+
+                        '<div class="button-confirm">'+
+                        	'<div class="button green" id="confirmCode">Confirm?</div>'+
+                        '</div>'+
+                        '<div class="new-passwd">'+
+                        	'<span class="name">{PASSWD}</span><br/>'+
+                        	'<input type="password" id="codepass" name="codepass"/>'+
+                        	'<span class="name">{PASSWDTWO}</span><br/>'+
+                        	'<input type="password" id="codetwo" name="codetwo"/>'+
+                        '</div>'+
+                        '<div class="button-confirm-password">'+
+                        	'<div class="button green" id="newpasswd">New Password</div>'+
+                        '</div>'+
+					'</div>',
+    'listItemHome' : '<div class="box-list-item" id="news-{ID}">'+
+                    	'<div class="content-image">'+
+                        	'<img src="{IMG}"/>'+
+                        '</div>'+
+                        '<div class="content-texto">'+
+                        	'<span class="name">{NAME}</span>'+
+                            '<span class="date">{DATE}</span>'+
+                            '<span class="texto">{TEXT}</span>'+
+                            '<div>'+
+                                '<ul class="question-list">'+
+                                    //'<li>Eu Vou</li>'+
+                                    //'<li>Tô afim</li>'+
+                                    //'<li>Não vou</li>'+
+                                    //'<li> Ver Local</li>'+
+                                '</ul>'+
+                            '</div>'+
+                        '</div>'+
+                    '</div>',
+    'listItemEvent' : '<div class="box-list-item">'+
+                    	'<div class="content-image">'+
+                        	'<a href="index.php?page=profileevent&events={EVEID}"><img src="{IMG}"/></a>'+
+                        '</div>'+
+                        '<div class="content-texto">'+
+                        	'<a href="index.php?page=profileevent&events={IDEVE}"><span class="name">{NAME}</span></a>'+
+                            '<span class="date">{DATE}</span>'+
+                            '<span class="texto">{TEXT}</span>'+
+                            '<div>'+
+                                '<ul class="question-list">'+
+                                    //'<li>Eu Vou</li>'+
+                                    //'<li>Tô afim</li>'+
+                                    //'<li>Não vou</li>'+
+                                    //'<li> Ver Local</li>'+
+                                '</ul>'+
+                            '</div>'+
+                        '</div>'+
+                    '</div>',
+    'listuseAsPage' : '<div class="box-list-item">'+
+                    	'<div class="content-image">'+
+                        	'<a href="index.php?page=placeprofile&pid={EVEID}"><img src="{IMG}"/></a>'+
+                        '</div>'+
+                        '<div class="content-texto">'+
+                        	'<a href="index.php?page=placeprofile&pid={IDEVE}"><span class="name">{NAME}</span></a>'+
+                            '<span class="date">{DATE}</span>'+
+                            '<span class="texto">{TEXT}</span>'+
+                            '<div>'+
+                                '<ul class="question-list">'+
+                                	'<div class="idplace" pla_id="{PLACEID}>'+
+                                    	'<li id="status">{Status}</li>'+
+                                    '</div>'+
+                                    //'<li>Tô afim</li>'+
+                                    //'<li>Não vou</li>'+
+                                    //'<li> Ver Local</li>'+
+                                '</ul>'+
+                            '</div>'+
+                        '</div>'+
+                    '</div>',
+					
+	'componentImgFriends' : '<div class="componentImgFriends">'+
+                    	    	//'<span class="friends">FRIENDS</span>'+
+                        		//'<a href="index.php?page=friends"><span class="see-all">See All</span></a>'+
+								'<div class="content-search">'+
+                    			'<input class="text-search" type="text" />'+
+								'<a class="btn-search"></a>'+
+								'</div>'+
+                        		'<ul id="box-list-img" class="box-list-img">{LIST_IMG}</ul>'+
+                    		'</div>',				
+					
+	'imageFriends' : '<li><a href="index.php?page=pageprofile&uid={ID}"><img src="{IMG}"/></a></li>',
+	
+	'imageProfile' : '<a class="image-profile">'+
+						'<img src="{IMG}"/>'+
+					 '</a>'+
+					 '<a class="name-profile">{NAME}</a>',
+	'placeImage' : '<a class="image-profile">'+
+						'<img src="{IMG}"/>'+
+					 '</a>'+
+					 '<a class="name-profile">{NAME}</a>'+
+					 '<div class="place-menu-address">'+
+					 	'<div class="address-label">{ADDRESS}</div>'+
+					 	//'<div class="">'
+					 '</div>',
+	'imageEvent' : '<div class="image-profile">'+
+						'<img src="{IMG}"/>'+
+					 '</div>',
+	'confirmFriend': '<div class="people-picture">'+
+							'<img class="information-user-image" src="{IMGUSER}">'+
+						'</div>',
+	'noFriend': '<div class="people-picture">'+
+							'<img class="information-user-image" src="{IMGUSER}">'+
+						'</div>',
+	'PendingFriend': '<div class="people-picture">'+
+							'<img class="information-user-image" src="{IMGUSER}">'+
+						'</div>',
+	'ComponentMiddleEvent': '<div class="frame-middle">'+
+								'<div class="profile-event">'+
+									'<div class="profile-event-name"><div id="eve-name">{EVENAME}</div></div>'+
+								'</div>'+
+								'<br/><hr>'+
+								'<div class="profile-description-event">{DESCRIPTIONTITLE}<img src="{ICONDESC}"></div>'+
+								'<hr>'+
+								'<div class="profile-info-event"><div id="infoeve">{INFO}</div>'+
+														'<div class="new-description" id="infoeve">'+
+															'<textarea id="description-new"></textarea>'+
+															'<div class="button green" id="ndescription">New description</div>'+
+														'</div>'+
+								'</div>'+
+								'<hr>'+
+								'<div class="profile-location-event">{PLACETITLE}<img src="{ICONPLACE}" /></div>'+
+								'<hr>'+
+								'<div class="location-information">'+
+									'<div class="location-left">'+
+										'<div class="profile-adress-event"><img src="{PLACESEVENT}" /> <div class="profile-adress-event-text">{ADDRESS}</div>'+
+											'<div class="new-local">'+
+												'<input type="text" id="local-new" />'+
+												'<div class="button green" id="nlocal">New local</div>'+
+											'</div>'+
+										'</div>'+
+										'<br/>'+
+										'<div class="profile-phone1-event"><img src="{IMGCELL}" /> <div class="profile-phone1-event-text">{CELLPHOT}</div>'+
+											'<div class="new-cellphone">'+
+												'<input type="text" id="cellphone-new" />'+
+												'<div class="button green" id="ncellphone">New cellphone</div>'+
+											'</div>'+
+										'</div>'+
+										'<br/>'+
+										'<div class="profile-phone2-event"><img src="{IMGTEL}" /> <div class="profile-phone2-event-text">{TELL}</div>'+
+											'<div class="new-phone">'+
+												'<input type="text" id="phone-new" />'+
+												'<div class="button green" id="nphone">New phone</div>'+
+											'</div>'+
+										'</div>'+
+										'<br/>'+
+										'<div class="profile-date-event"><img id="icon-calendar" src="{IMGCALENDAR}" /> <div class="profile-date-event-text">{DATE}'+
+											'<input id="change-date-event" type="text" readonly="readonly" style="opacity: 0; cursor:default; width:0px;"/>'+
+										'</div>'+
+											'<br/>'+
+											'<div class="button green" id="ndate">New date</div>'+
+										'</div>'+
+										'<br/>'+
+										'<div class="profile-cost-event"><img src="{ICONMONEY}" /> <div class="profile-cost-event-text">{PRICE}</div>'+
+											'<div class="new-cost">'+
+												'<input type="text" id="cost-new" />'+
+												'<div class="button green" id="ncost">New cost</div>'+
+											'</div>'+
+										'</div>'+
+										'<br/>'+
+									'</div>'+
+								'</div>'+
+								'<hr>'+
+								'<div class="profile-event-comments">'+
+									'<div class="profile-timeline-event">'+
+										'<div class="description-caracteres">'+
+											'<div class="profile-event-comments-text">COMMENTS</div> 140'+
+										'</div>'+
+										'<div class="arrow-image">'+
+										'</div>'+
+										'<div class="comment">'+
+											'<div class="write-comment">'+
+												'<textarea id="comment-event-message"></textarea>'+
+											'</div>'+
+											'<div class="btn-comment">'+
+												'<div class="button" id="post-comment">{TEXTCOMMENT}</div>'+
+											'</div>'+
+										'</div>'+
+									'</div>'+
+								'</div>'+
+								'<br/>'+
+								'<hr>'+
+							'</div>',
+	'componentCommentEvent' : '<div class="frame-middle">'+
+								'<div>'+
+									'<div class="information-left">'+
+										'<div class="information-user">'+
+											'<img class="information-user-image" src="{USERTHUMB}">'+
+										'</div>'+
+									'</div>'+
+									'<div class="information-right">{USERNAME}</div>'+
+									'<div class="comment-description">{COMMENT}</div>'+
+								'</div><br/>'+
+								'<hr>'+
+							'</div>',
+	'componentMenuPlaceProfile' : '<div class="component-menu-profile">'+
+								 '<a class="profile" href="index.php?page=placeprofile&pid={PID}">{PROFILE}</a>'+
+								 '<a class="events" href="index.php?page=placeevents&pid={EVE}"><span class="name">{EVENTS}</span><span class="count">{COUNT}</span></a>'+
+							 '</div>',					 
+	'componentMenuProfile' : '<div class="component-menu-profile">'+
+								 '<div class="menu-option" href="index.php?page=pageprofile&uid={USERID}"><img src="style/img/buttons/bt_navega_Profile.jpg"/><span class="option-name">{PROFILE}</span>'+
+								 '<div class="profile-submenu">'+
+								 '<span class="suboption-name">Settings</span><br>'+
+								 '<span id="preferences-option" class="suboption-name">Preferences</span><br>'+
+								 '<span class="suboption-name">Logout</span><br>'+
+								 '</div>'+
+								 '</div>'+
+								 
+								 '<div class="menu-option" ><img src="style/img/buttons/bt_navega_place.jpg"/><span class="option-name">{FRIENDS}</span><span class="count">{COUNTFR}</span></div>'+
+								 '<div class="menu-option" id="event-menu"><img src="style/img/buttons/bt_navega_Profile.jpg"/><span  class="option-name">{EVENTS}</span><span class="count">{COUNT}</span></div>'+
+							 '</div>',
+	'componentMenuProfileFriend' : '<div class="component-menu-profile">'+
+								 '<a class="profile" href="index.php?page=profile">{PROFILE}</a>'+
+								 '<a class="friends" href="index.php?page=friendsuser&uid={ID}">{FRIENDS}</a>'+
+							 '</div>',
+							 
+    'componentMenuProfileAdd' : '<div class="component-menu-profile">'+
+								 '<a class="profile" href="#">{ADDFRIEND}</a>'+
+								 '<a class="friends" href="index.php?page=friends">{FRIENDS}</a>'+
+							 '</div>',
+							 
+	'componentSuggestions' : '<div class="componentSuggestions">'+
+								'<span class="title">Suggestions</span>'+
+								'<div id="suggestions-container">{SUGG}</div>'+
+							 '</div>',
+							 
+	'suggestions' : '<div class="suggestions">'+
+						'<a href="?page=pageprofile&uid={FRIENDID}"><div class="img"><img src="{IMG}"/></div></a>'+
+						'<div class="body">'+
+							'<a href="?page=pageprofile&uid={FRIENDID}"><span class="name">{NAME}</span></a>'+
+							'<span id="suggestion-close" class="close"></span>'+							
+							'<span class="text">{TEXT} {MUTUALFRIENDS}</span>'+
+							'<input type="hidden" id="friendid" value="{ACTIONLINK}">'+
+							'<a href="#"><span class="add">{ACTION}</span></a>'+
+						'</div>'+						
+					'</div>',
+	'componentAdvertising' : '<div class="componentAdvertising">'+
+								'<span class="title">Advertising</span>'+
+								'<div>{ADV}</div>'+
+							 '</div>',
+							 
+	'advertising' : '<div class="advertising">'+
+						'<img src="{IMG}"/>'+
+						'<span class="text">{TEXT}</span>'+							
+						'<span class="confirm">{CONFIRM}</span>'+						
+					'</div>',			
+	//********* Rubem's timeline design **********//
+	// 'componentTimelineHome' : '<div id="timeline-item-time{ID}" class="timeline-item">'+
+						  // '<div class="title">'+
+							  // '<span class="date1">{SEMANA}</span> <span class="date2">{DATE}</span>'+
+						  // '</div>'+	  
+							  // '<div value="time{ID}" class="display001">'+
+									// '<div value="time{ID}" class="img">'+
+										// '<a href="index.php?page=placeprofile&pid={PLAID}"><img value="time{ID}" src="{IMG}" class="grayscale"/></a>'+
+										// '<span value="time{ID}">{NAME}</span>'+									
+									// '</div>'+
+									// '<div value="time{ID}" class="legend">'+
+										// '<span class="people" value="time{ID}">{NAME}</span>'+
+										// '<span class="money" value="time{ID}">{NAME}</span>'+									
+									// '</div>'+
+							  // '</div>'+		
+							  // '<div class="display002">'+
+									// '<span>{NAME}</span>'+
+									// '<a href="index.php?page=placeprofile&pid={PLAID2}"><img src="{IMG2}" class="grayscale"/></a>'+
+									// '<a href="index.php?page=placeprofile&pid={PLAID3}"><img src="{IMG3}" class="grayscale"/></a>'+
+									// '<a href="index.php?page=placeprofile&pid={PLAID4}"><img src="{IMG4}" class="grayscale"/></a>'+									
+									// '<span class="other-places">{COUNT} &nbsp; &nbsp; {NAME}</span>'+									
+							  // '</div>'+								  
+						  // '</div>',
+	'componentTimelineHome' : '<div id="timeline-item-time{ID}" class="timeline-item">'+
+						  '<div class="title">'+
+							  '<span class="date1">{SEMANA}</span> <span class="date2">{DATE}</span>'+
+						  '</div>'+	  
+							  '<div value="time{ID}" class="display001">'+
+									'<div value="time{ID}" class="img">'+
+										'<a href="index.php?page=placeprofile&pid={PLAID}"><img value="time{ID}" src="{IMG}" class="grayscale"/></a>'+
+										'<span value="time{ID}">{NAME}</span>'+									
+									'</div>'+
+									'<div value="time{ID}" class="legend">'+
+										'<span class="people" value="time{ID}">{NAME}</span>'+
+										'<span class="money" value="time{ID}">{NAME}</span>'+									
+									'</div>'+
+							  '</div>'+		
+							  // '<div class="display002">'+
+									// '<span>{NAME}</span>'+
+									// '<a href="index.php?page=placeprofile&pid={PLAID2}"><img src="{IMG2}" class="grayscale"/></a>'+
+									// '<a href="index.php?page=placeprofile&pid={PLAID3}"><img src="{IMG3}" class="grayscale"/></a>'+
+									// '<a href="index.php?page=placeprofile&pid={PLAID4}"><img src="{IMG4}" class="grayscale"/></a>'+									
+									// '<span class="other-places">{COUNT} &nbsp; &nbsp; {NAME}</span>'+									
+							  // '</div>'+								  
+						  '</div>',
+	//********* Rubem's timeline design **********// 
+	// 'componentTimeline' : '<div id="timeline-item-time{ID}" class="timeline-item">'+
+						  // '<div class="title">'+
+							  // '<span class="date1">{SEMANA}</span> <span class="date2">{DATE}</span>'+
+						  // '</div>'+	  
+							  // '<div value="time{ID}" class="display001">'+
+									// '<div value="time{ID}" class="img">'+
+										// '<a href="index.php?page=placeprofilemin&pid={PLAID}"><img value="time{ID}" src="{IMG}" class="grayscale"/></a>'+
+										// '<span value="time{ID}">{NAME}</span>'+									
+									// '</div>'+
+									// '<div value="time{ID}" class="legend">'+
+										// '<span class="people" value="time{ID}">{NAME}</span>'+
+										// '<span class="money" value="time{ID}">{NAME}</span>'+									
+									// '</div>'+
+							  // '</div>'+		
+							  // '<div class="display002">'+
+									// '<span>{NAME}</span>'+
+									// '<a href="index.php?page=placeprofilemin&pid={PLAID2}"><img src="{IMG2}" class="grayscale"/></a>'+
+									// '<a href="index.php?page=placeprofilemin&pid={PLAID3}"><img src="{IMG3}" class="grayscale"/></a>'+
+									// '<a href="index.php?page=placeprofilemin&pid={PLAID4}"><img src="{IMG4}" class="grayscale"/></a>'+									
+									// '<span class="other-places" weekday="{WEEKDAY}">{COUNT} &nbsp; &nbsp; {NAME}</span>'+									
+							  // '</div>'+								  
+						  // '</div>',
+	'componentTimeline' : '<div id="timeline-item-time{ID}" class="timeline-item">'+
+						  '<div class="title">'+
+							  '<span class="date1">{SEMANA}</span> <span class="date2">{DATE}</span>'+
+						  '</div>'+	  
+							  '<div value="time{ID}" class="display001">'+
+									'<div value="time{ID}" class="img">'+
+										'<a class="local-place" href="#"><img value="time{ID}" src="{IMG}" class="grayscale"/></a>'+
+										'<span class="place-name" value="time{ID}">{NAME}</span>'+
+										'<hr>'+
+										'<span class="other-places" weekday="{WEEKDAY}">{COUNT} &nbsp; &nbsp; {NAME}</span>'+							
+									'</div>'+
+									//'<div value="time{ID}" class="legend">'+
+									//	'<span class="people" value="time{ID}">{NAME}</span>'+
+									//	'<span class="money" value="time{ID}">{NAME}</span>'+									
+									//'</div>'+
+							  '</div>'+		
+							  // '<div class="display002">'+
+									// '<span>{NAME}</span>'+
+									// '<a href="index.php?page=placeprofilemin&pid={PLAID2}"><img src="{IMG2}" class="grayscale"/></a>'+
+									// '<a href="index.php?page=placeprofilemin&pid={PLAID3}"><img src="{IMG3}" class="grayscale"/></a>'+
+									// '<a href="index.php?page=placeprofilemin&pid={PLAID4}"><img src="{IMG4}" class="grayscale"/></a>'+									
+									// '<span class="other-places" weekday="{WEEKDAY}">{COUNT} &nbsp; &nbsp; {NAME}</span>'+									
+							  // '</div>'+								  
+						  '</div>',
+	'componentPlaceTimeline' : '<div id="timeline-item-time{ID}" class="timeline-item">'+
+							  '<div value="time{ID}" class="display003">'+
+							  		'<span class="date1">{SEMANA}</span>'+
+									'<div value="time{ID}" class="img">'+
+										'<a href="index.php?page=profileevent&events={EVEID}"><img value="time{ID}" src="{IMG}" class="grayscale"/></a>'+
+										'<span value="time{ID}">{NAME}</span>'+									
+									'</div>'+
+							  '</div>'+		
+							  '<div class="display004">'+
+									'<span>{COUNT}</span>'+
+									'<span>{VAL}</span>'+									
+							  '</div>'+								  
+						  '</div>',					  
+	'componentRequestFriend': '<div class="requests-container">'+
+									'<div class="user-photo">'+
+										'<img src="{FRIENDIMAGE}"/>'+
+									'</div>'+
+									'<div class="user-info">'+
+										'<div class="name">{NAME}</div>'+
+										'<div>{MESSAGE}</div>'+
+									'</div>'+
+									'<div class="actions">'+
+										'<div class="button bt-request-confirm" accid="{FRIENDID}" id="confirm-friend">Confirm</div>'+
+										'<div class="button red bt-request-cancel" accid="{IDFRIEND}">No, thanks!</div>'+
+									'</div>'+
+								'</div>',					  
+	'componentImageFriend' : '<a class="component-image-friend" href="index.php?page=pageprofile&uid={ID}">'+
+								'<img src="{IMG}"/>'+
+							'</a>',
+	'componentEditFriend' : '<div class="friends-name">'+
+								'<div class="search-friends-name">'+
+									'<label>{TEXT}</label>'+
+								'</div>'+
+								'<div class="input-search">'+
+									'<input type="text" id="search-friends">'+
+								'</div>'+
+								'<div class="search-button">'+
+									'<div class="bt-search-label">{BUTTONSEARCH}</div>'+
+								'</div>'+
+								'<div class="request-button">'+
+									'<div class="bt-request">{BUTTONREQUEST}</div>'+
+								'</div>'+
+							'</div>',
+	'componentListEditFriend' : '<div class="friends-container">' +
+	'<div class="friend-box">' +
+	'<div class=friend-photo>' +
+	'<img src="{IMG}">' +
+	'</div>' +
+	'<div class="friend-name">' +
+	'<span>{NAME}</span>' +
+	'</div>' +
+	'<div class = "bt-cancel-friendship" friend-id="{ID}">' +
+	'<img src="{IMGCLOSE}">' +
+	'</div>' +
+	'<hr>' +
+	'</div>' +
+	'</div>',
+	'componentSearch' : '<div class="body-places-unselected">' +
+							'<div class="left-side">' +
+								'<a href="index.php?page=placeprofile&pid={PID}"><span class="placephoto"><img src="{IMG}"></span></a>' +
+								'<div class="placename">{NAME}</div>' +
+								'<div class="rating">{RATING}</div>' +
+								'<div class="endereco">{ENDERECO}</div>' +
+							'</div>' +
+							'<div class="center-side">' +
+								'<div class="descricaofesta">{FESTA}</div>' +
+							'</div>' +
+							'<div class="right-side">' +
+							//'<div class="videoplayer">{VIDEO}</div>'+
+						'</div>' + '</div>',
+	'componentSearchOff' : '<div class="body-places-unselected">' +
+							'<div class="left-side">' +
+								'<span class="placephoto"><img src="{IMG}"></span>' +
+							'</div>' +
+							'<div class="center-side">' +
+								'<div class="descricaofesta">{FESTA}</div>' +
+							'</div>' +
+							'</div>',
+	
+	'componentPlacesAdd' : '<div class="basic-information">' +
+	'<div class="title">{TEXT}</div>' +
+	'<div class="basic-tab-title">{TEXT}</div>' +
+	'<div class="content-fields">' +
+	'<div class="fields">' +
+	'<div class="fields-text">{TEXTFIELD}</div>' + 
+	'<div class="inputs"><input type="text" id="name" name="name"></div>' +
+	'</div>' + '<div class="fields">' +
+	'<div class="fields-textarea">{TEXTAREA}</div>' +
+	'<div class="inputs">' +
+	'<textarea type="text" id="description" name="description"></textarea>' +
+	'</div>' +
+	'</div>' +
+	'<div class="characters"><div id="characters-text-counter" class="characters-text">{CHARACTER}</div></div>' +
+	'<div class="fields">' +
+	'<div class="fields-text">{ADDRESS}</div>' +
+	'<div class="inputs">' +
+	'<input type="text" id="form-input-address" name="address">' +
+	'</div>' +
+	'</div>' +
+	'<div class="fields">' +
+	'<div class="fields-text">{CITY}</div>' +
+	'<div class="inputs">' + 
+	'<input id="place-city" type="text" name="city" class="required" />' +
+	'</div>' + '</div>' + '<div class="fields">' +
+	'<div class="fields-text">{STATE}</div>' +
+	'<div class="inputs">' +
+	'<input id="place-state" type="text" name="state" class="required" />' +
+	'</div>' + '</div>' +
+	'<div class="fields">' +
+	'<div class="fields-text">{COUNTRY}</div>' +
+	'<div class="country">' +
+	'<select id="place-country" name="country" class="required">' +
+	'<option value="{BR}">{CNTBR}</option>' +
+	'<option value="{EUA}">{CNTEUA}</option>' +
+	'</select>' + '</div>' + '</div>' + '</div>' +
+	'<div class="features-place">' +
+	'<div class="features-title">{DIFFERENTIAL}</div>'+
+	'<table class="features-table"><tr class="row">' +
+	'<td class="cell"><input id="parking-checkbox" type="checkbox" name="parking">' +
+	'<div class="features-place-text">{PARKING}</div></td>' +
+	'<td class="cell"><input id="accessible-checkbox" type="checkbox" name="accessible">' +
+	'<div class="features-place-text">{WHEELCHAIR}</div></td></tr>' +
+	'<tr class="row"><td><input id="delivery-checkbox" type="checkbox" name="delivery">' +
+	'<div class="features-place-text">{DELIVERY}</div></td>' +
+	'<td class="cell"><input id="smoking-checkbox" type="checkbox" name="smoking">' +
+	'<div class="features-place-text">{SMOKING}</div></td></tr>' +
+	'<tr class="row"><td><input id="livemusic-checkbox"  type="checkbox" name="livemusic">' +
+	'<div class="features-place-text">{LIVEMUSIC}</div></td>' +
+	'<td class="cell"><input id="playroom-checkbox" type="checkbox" name="playroom">' +
+	'<div class="features-place-text">{PLAYROOM}</div></td></tr>' +
+	'<tr class="row"><td><input id="wifi-checkbox" type="checkbox" name="wifi">' +
+	'<div class="features-place-text">{WIFIZONE}</div></td>' +
+	'<td class="cell"><input id="waiter-checkbox" type="checkbox" name="waiter">' +
+	'<div class="features-place-text">{WAITERSERVICE}</div></td></tr>' +
+	'<tr class="row"><td><input id="reservation-checkbox" type="checkbox" name="reservation">' +
+	'<div class="features-place-text">{TAKES}</div></td>' +
+	'</table>' +
+	'</div></div>' +
+	'<div class="business-information">'+
+	'<div class="business-title-text">BUSINESS INFORMATION</div>'+
+	'<div class="business-content-fields">'+
+		'<div class="business-fields">'+
+			'<div class="fields-text">Medium Cost:</div>'+
+			'<div class="medium-cost-container">'+
+				'<select id="medium-cost" name="medium-cost">'+
+				/************* Code from addplace.js *********/
+				'</select>'+
+			'</div>'+
+		'</div>'+
+	'</div>'+
+	'<div id="day-options-container" class="day-options-container">'+
+	'<div id="day-item-0" class="day-item">Day:<select class="week-days-select">'+
+	'<option value="Sunday">Sunday</option>'+
+	'<option value="Monday">Monday</option>'+
+	'<option value="Tuesday">Tuesday</option>'+
+	'<option value="Wednesday">Wednesday</option>'+
+	'<option value="Thursday">Thursday</option>'+
+	'<option value="Friday">Friday</option>'+
+	'<option value="Saturday">Saturday</option>'+
+	
+	'</select>'+
+	'Starts at:<select class="start-hour-select">'+
+	'<option value="00:00">00:00 AM</option>'+
+            '<option value="00:30">00:30 AM</option>'+
+            '<option value="01:00">01:00 AM</option>'+
+            '<option value="01:30">01:30 AM</option>'+
+            '<option value="02:00">02:00 AM</option>'+
+            '<option value="02:30">02:30 AM</option>'+
+            '<option value="03:00">03:00 AM</option>'+
+            '<option value="03:30">03:30 AM</option>'+
+            '<option value="04:00">04:00 AM</option>'+
+            '<option value="04:30">04:30 AM</option>'+
+            '<option value="05:00">05:00 AM</option>'+
+            '<option value="05:30">05:30 AM</option>'+
+            '<option value="06:00">06:00 AM</option>'+
+            '<option value="06:30">06:30 AM</option>'+
+            '<option value="07:00">07:00 AM</option>'+
+            '<option value="07:30">07:30 AM</option>'+
+            '<option value="08:00">08:00 AM</option>'+
+            '<option value="08:30">08:30 AM</option>'+
+            '<option value="09:00">09:00 AM</option>'+
+            '<option value="09:30">09:30 AM</option>'+
+            '<option value="10:00">10:00 AM</option>'+
+            '<option value="10:30">10:30 AM</option>'+
+            '<option value="11:00">11:00 AM</option>'+
+            '<option value="11:30">11:30 AM</option>'+
+            '<option value="12:00">12:00 AM</option>'+
+            '<option value="12:30">12:30 AM</option>'+
+            '<option value="13:00">01:00 PM</option>'+
+            '<option value="13:30">01:30 PM</option>'+
+            '<option value="14:00">02:00 PM</option>'+
+            '<option value="14:30">02:30 PM</option>'+
+            '<option value="15:00">03:00 PM</option>'+
+            '<option value="15:30">03:30 PM</option>'+
+            '<option value="16:00">04:00 PM</option>'+
+            '<option value="16:30">04:30 PM</option>'+
+            '<option value="17:00">05:00 PM</option>'+
+            '<option value="17:30">05:30 PM</option>'+
+            '<option value="18:00">06:00 PM</option>'+
+            '<option value="18:30">06:30 PM</option>'+
+            '<option value="19:00">07:00 PM</option>'+
+            '<option value="19:30">07:30 PM</option>'+
+            '<option value="20:00">08:00 PM</option>'+
+            '<option value="20:30">08:30 PM</option>'+
+            '<option value="21:00">09:00 PM</option>'+
+            '<option value="21:30">09:30 PM</option>'+
+            '<option value="22:00">10:00 PM</option>'+
+            '<option value="22:30">10:30 PM</option>'+
+            '<option value="23:00">11:00 PM</option>'+
+            '<option value="23:30">11:30 PM</option>'+
+	'</select>'+
+	'Ends at:<select class="end-hour-select">'+
+	'<option value="00:00">00:00 AM</option>'+
+            '<option value="00:30">00:30 AM</option>'+
+            '<option value="01:00">01:00 AM</option>'+
+            '<option value="01:30">01:30 AM</option>'+
+            '<option value="02:00">02:00 AM</option>'+
+            '<option value="02:30">02:30 AM</option>'+
+            '<option value="03:00">03:00 AM</option>'+
+            '<option value="03:30">03:30 AM</option>'+
+            '<option value="04:00">04:00 AM</option>'+
+            '<option value="04:30">04:30 AM</option>'+
+            '<option value="05:00">05:00 AM</option>'+
+            '<option value="05:30">05:30 AM</option>'+
+            '<option value="06:00">06:00 AM</option>'+
+            '<option value="06:30">06:30 AM</option>'+
+            '<option value="07:00">07:00 AM</option>'+
+            '<option value="07:30">07:30 AM</option>'+
+            '<option value="08:00">08:00 AM</option>'+
+            '<option value="08:30">08:30 AM</option>'+
+            '<option value="09:00">09:00 AM</option>'+
+            '<option value="09:30">09:30 AM</option>'+
+            '<option value="10:00">10:00 AM</option>'+
+            '<option value="10:30">10:30 AM</option>'+
+            '<option value="11:00">11:00 AM</option>'+
+            '<option value="11:30">11:30 AM</option>'+
+            '<option value="12:00">12:00 AM</option>'+
+            '<option value="12:30">12:30 AM</option>'+
+            '<option value="13:00">01:00 PM</option>'+
+            '<option value="13:30">01:30 PM</option>'+
+            '<option value="14:00">02:00 PM</option>'+
+            '<option value="14:30">02:30 PM</option>'+
+            '<option value="15:00">03:00 PM</option>'+
+            '<option value="15:30">03:30 PM</option>'+
+            '<option value="16:00">04:00 PM</option>'+
+            '<option value="16:30">04:30 PM</option>'+
+            '<option value="17:00">05:00 PM</option>'+
+            '<option value="17:30">05:30 PM</option>'+
+            '<option value="18:00">06:00 PM</option>'+
+            '<option value="18:30">06:30 PM</option>'+
+            '<option value="19:00">07:00 PM</option>'+
+            '<option value="19:30">07:30 PM</option>'+
+            '<option value="20:00">08:00 PM</option>'+
+            '<option value="20:30">08:30 PM</option>'+
+            '<option value="21:00">09:00 PM</option>'+
+            '<option value="21:30">09:30 PM</option>'+
+            '<option value="22:00">10:00 PM</option>'+
+            '<option value="22:30">10:30 PM</option>'+
+            '<option value="23:00">11:00 PM</option>'+
+            '<option value="23:30">11:30 PM</option>'+
+	'</select>'+
+	'Promoday:<input class="promo-day" id="promo-day-0" type="checkbox" name="promoday"></div>'+
+	
+	'</div>'+
+	'<div class="specify-new-day"><input class="newday button" type="button" value="SPECIFY A NEW DAY"></div>'+
+	'<div class="info-content-fields">'+
+		'<table>'+
+		'<tr class="row"><td class="cell"><div class="fields-text">Phone Number:</div></td>'+
+		'<td class="cell"><input type="text" id="place-phone-number" name="phone-number"></td></tr>'+
+		'<tr class="row"><td class="cell"><div class="fields-text">Cell Number:</div></td>'+
+		'<td class="cell"><input type="text" id="place-cellphone-number" name="cell-number"></td></tr>'+
+		'<tr class="row"><td class="cell"><div class="fields-text">Twitter User:</div></td>'+
+		'<td class="cell"><input type="text" id="twitter-user-field" name="twitter-user"></td></tr>'+
+		'<tr class="row"><td class="cell"><div class="fields-text">Email:</div></td>'+
+		'<td class="cell"><input type="text" id="place-email" name="email"></td></tr>'+
+		'<tr class="row"><td class="cell"><div class="fields-text">Website:</div></td>'+
+		'<td class="cell"><input type="text" id="place-website" name="website"></td></tr>'+
+		'</table>'+
+	'</div>'+
+	'<div id="payment-method-container" class="payment-method-container">'+
+	'<div id="payment-items-container" class="payment-items-container">'+
+	//********** Code from JS **********//
+	'</div>'+
+	'</div>'+
+	'<div class= "new-card-container"><div class="add-new-card"><input id="add-new-card" class="button" type="button" value="ADD NEW CARD"></div></div>'+
+	'<div class="category">'+
+		'<div class="category-field">'+
+			'<div class="category-text">Category:</div>'+
+			'<div class="category-place">'+
+				'<select id="place-category" name="place-category" class="required">'+
+      				'<option value="{BR}">{CNTBR}</option>'+
+      				/********** Code from js *********/
+      		 	'</select></div>'+
+		'</div>'+
+	'</div>'+
+'<div class="subcategories">'+
+'<div class="table-container">'+
+'<table id="subcategories-table">'+
+'</table>'+
+'</div>'+ 
+'</div>'+
+'<div class="other-category">'+
+	'<div class="other-category-text">Other Category:</div>'+
+		'<div class="other-category-textarea">'+
+		'<textarea type="text" id="other-category"></textarea>'+
+	'</div>'+
+	'<div class="other-category-characters"><div class="other-category-characters-text">Separated by spaces.</div></div>'+
+'</div>'+
+'</div>'+
+'<div class="add-place-buttons">'+
+	'<input class="red button" type="button" name="reset" value="Cancel" onclick="history.go(-1)" />'+
+	'<input class="button" id="confirm-place-info" type="submit" name="confirm" value="{SUBMIT}" />'+
+'</div>',
+'componentWeekDays': '<div id="day-item-{ID}" class="day-item">Day:<select class="week-days-select">'+
+	'<option {SUNDAY} value="SUNDAY">Sunday</option>'+
+	'<option {MONDAY} value="MONDAY">Monday</option>'+
+	'<option {TUESDAY} value="TUESDAY">Tuesday</option>'+
+	'<option {WEDNESDAY} value="WEDNESDAY">Wednesday</option>'+
+	'<option {THURSDAY} value="THURSDAY">Thursday</option>'+
+	'<option {FRIDAY} value="FRIDAY">Friday</option>'+
+	'<option {SATURDAY} value="SATURDAY">Saturday</option>'+
+	'</select>'+
+	'Starts at:<select class="start-hour-select">'+
+	'<option {START00:00}="{START00:00}" value="00:00">00:00 AM</option>'+
+            '<option {START00:30}="{START00:30}" value="00:30">00:30 AM</option>'+
+            '<option {START01:00}="{START01:00}" value="01:00">01:00 AM</option>'+
+            '<option {START01:30}="{START01:30}" value="01:30">01:30 AM</option>'+
+            '<option {START02:00}="{START02:00}" value="02:00">02:00 AM</option>'+
+            '<option {START02:30}="{START02:30}" value="02:30">02:30 AM</option>'+
+            '<option {START03:00}="{START03:00}" value="03:00">03:00 AM</option>'+
+            '<option {START03:30}="{START03:30}" value="03:30">03:30 AM</option>'+
+            '<option {START04:00}="{START04:00}" value="04:00">04:00 AM</option>'+
+            '<option {START04:30}="{START04:30}" value="04:30">04:30 AM</option>'+
+            '<option {START05:00}="{START05:00}" value="05:00">05:00 AM</option>'+
+            '<option {START05:30}="{START05:30}" value="05:30">05:30 AM</option>'+
+            '<option {START06:00}="{START06:00}" value="06:00">06:00 AM</option>'+
+            '<option {START06:30}="{START06:30}" value="06:30">06:30 AM</option>'+
+            '<option {START07:00}="{START07:00}" value="07:00">07:00 AM</option>'+
+            '<option {START07:30}="{START07:30}" value="07:30">07:30 AM</option>'+
+            '<option {START08:00}="{START08:00}" value="08:00">08:00 AM</option>'+
+            '<option {START08:30}="{START08:30}" value="08:30">08:30 AM</option>'+
+            '<option {START09:00}="{START09:00}" value="09:00">09:00 AM</option>'+
+            '<option {START09:30}="{START09:30}" value="09:30">09:30 AM</option>'+
+            '<option {START10:00}="{START10:00}" value="10:00">10:00 AM</option>'+
+            '<option {START10:00}="{START10:30}" value="10:30">10:30 AM</option>'+
+            '<option {START11:00}="{START11:00}" value="11:00">11:00 AM</option>'+
+            '<option {START11:30}="{START11:30}" value="11:30">11:30 AM</option>'+
+            '<option {START12:00}="{START12:00}" value="12:00">12:00 AM</option>'+
+            '<option {START12:30}="{START12:30}" value="12:30">12:30 AM</option>'+
+            '<option {START13:00}="{START13:00}" value="13:00">01:00 PM</option>'+
+            '<option {START13:30}="{START13:30}" value="13:30">01:30 PM</option>'+
+            '<option {START14:00}="{START14:00}" value="14:00">02:00 PM</option>'+
+            '<option {START14:30}="{START14:30}" value="14:30">02:30 PM</option>'+
+            '<option {START15:00}="{START15:00}" value="15:00">03:00 PM</option>'+
+            '<option {START15:30}="{START15:30}" value="15:30">03:30 PM</option>'+
+            '<option {START16:00}="{START16:00}" value="16:00">04:00 PM</option>'+
+            '<option {START16:30}="{START16:30}" value="16:30">04:30 PM</option>'+
+            '<option {START17:00}="{START17:00}" value="17:00">05:00 PM</option>'+
+            '<option {START17:30}="{START17:30}" value="17:30">05:30 PM</option>'+
+            '<option {START18:00}="{START18:00}" value="18:00">06:00 PM</option>'+
+            '<option {START18:30}="{START18:30}" value="18:30">06:30 PM</option>'+
+            '<option {START19:00}="{START19:00}" value="19:00">07:00 PM</option>'+
+            '<option {START19:30}="{START19:30}" value="19:30">07:30 PM</option>'+
+            '<option {START20:00}="{START20:00}" value="20:00">08:00 PM</option>'+
+            '<option {START20:30}="{START20:30}" value="20:30">08:30 PM</option>'+
+            '<option {START21:00}="{START21:00}" value="21:00">09:00 PM</option>'+
+            '<option {START21:30}="{START21:30}" value="21:30">09:30 PM</option>'+
+            '<option {START22:00}="{START22:00}" value="22:00">10:00 PM</option>'+
+            '<option {START22:30}="{START22:30}" value="22:30">10:30 PM</option>'+
+            '<option {START23:00}="{START23:00}" value="23:00">11:00 PM</option>'+
+            '<option {START23:30}="{START23:30}" value="23:30">11:30 PM</option>'+
+	'</select>'+
+	'Ends at:<select class="end-hour-select">'+
+	'<option {END00:00}="{END00:00}" value="00:00">00:00 AM</option>'+
+            '<option {END00:30}="{END00:30}" value="00:30">00:30 AM</option>'+
+            '<option {END01:00}="{END01:00}" value="01:00">01:00 AM</option>'+
+            '<option {END01:30}="{END01:30}" value="01:30">01:30 AM</option>'+
+            '<option {END02:00}="{END02:00}" value="02:00">02:00 AM</option>'+
+            '<option {END02:30}="{END02:30}" value="02:30">02:30 AM</option>'+
+            '<option {END03:00}="{END03:00}" value="03:00">03:00 AM</option>'+
+            '<option {END03:30}="{END03:30}" value="03:30">03:30 AM</option>'+
+            '<option {END04:00}="{END04:00}" value="04:00">04:00 AM</option>'+
+            '<option {END04:30}="{END04:30}" value="04:30">04:30 AM</option>'+
+            '<option {END05:00}="{END05:00}" value="05:00">05:00 AM</option>'+
+            '<option {END05:30}="{END05:30}" value="05:30">05:30 AM</option>'+
+            '<option {END06:00}="{END06:00}" value="06:00">06:00 AM</option>'+
+            '<option {END06:30}="{END06:30}" value="06:30">06:30 AM</option>'+
+            '<option {END07:00}="{END07:00}" value="07:00">07:00 AM</option>'+
+            '<option {END07:30}="{END07:30}" value="07:30">07:30 AM</option>'+
+            '<option {END08:00}="{END08:00}" value="08:00">08:00 AM</option>'+
+            '<option {END08:30}="{END08:30}" value="08:30">08:30 AM</option>'+
+            '<option {END09:00}="{END09:00}" value="09:00">09:00 AM</option>'+
+            '<option {END09:30}="{END09:30}" value="09:30">09:30 AM</option>'+
+            '<option {END10:00}="{END10:00}" value="10:00">10:00 AM</option>'+
+            '<option {END10:00}="{END10:30}" value="10:30">10:30 AM</option>'+
+            '<option {END11:00}="{END11:00}" value="11:00">11:00 AM</option>'+
+            '<option {END11:30}="{END11:30}" value="11:30">11:30 AM</option>'+
+            '<option {END12:00}="{END12:00}" value="12:00">12:00 AM</option>'+
+            '<option {END12:30}="{END12:30}" value="12:30">12:30 AM</option>'+
+            '<option {END13:00}="{END13:00}" value="13:00">01:00 PM</option>'+
+            '<option {END13:30}="{END13:30}" value="13:30">01:30 PM</option>'+
+            '<option {END14:00}="{END14:00}" value="14:00">02:00 PM</option>'+
+            '<option {END14:30}="{END14:30}" value="14:30">02:30 PM</option>'+
+            '<option {END15:00}="{END15:00}" value="15:00">03:00 PM</option>'+
+            '<option {END15:30}="{END15:30}" value="15:30">03:30 PM</option>'+
+            '<option {END16:00}="{END16:00}" value="16:00">04:00 PM</option>'+
+            '<option {END16:30}="{END16:30}" value="16:30">04:30 PM</option>'+
+            '<option {END17:00}="{END17:00}" value="17:00">05:00 PM</option>'+
+            '<option {END17:30}="{END17:30}" value="17:30">05:30 PM</option>'+
+            '<option {END18:00}="{END18:00}" value="18:00">06:00 PM</option>'+
+            '<option {END18:30}="{END18:30}" value="18:30">06:30 PM</option>'+
+            '<option {END19:00}="{END19:00}" value="19:00">07:00 PM</option>'+
+            '<option {END19:30}="{END19:30}" value="19:30">07:30 PM</option>'+
+            '<option {END20:00}="{END20:00}" value="20:00">08:00 PM</option>'+
+            '<option {END20:30}="{END20:30}" value="20:30">08:30 PM</option>'+
+            '<option {END21:00}="{END21:00}" value="21:00">09:00 PM</option>'+
+            '<option {END21:30}="{END21:30}" value="21:30">09:30 PM</option>'+
+            '<option {END22:00}="{END22:00}" value="22:00">10:00 PM</option>'+
+            '<option {END22:30}="{END22:30}" value="22:30">10:30 PM</option>'+
+            '<option {END23:00}="{END23:00}" value="23:00">11:00 PM</option>'+
+            '<option {END23:30}="{END23:30}" value="23:30">11:30 PM</option>'+
+			'</select>'+
+			'Promoday:<input {1}="{1}" class="promo-day" id="promo-day-{ID}"type="checkbox" name="promoday">'+
+			'<div class="cancel-day"><img src="style/img/icons/close.png"/></div>'+
+            '</div>',
+	'componentListEditFriend': '<div class="friends-container">'+
+	                                '<div class="friend-box">'+
+	                                    '<div class=friend-photo>'+
+	                                        '<img src="{IMG}">'+
+	                                     '</div>'+
+	                                     '<div class="friend-name">'+
+	                                        '<span>{NAME}</span>'+
+	                                     '</div>'+
+	                                     '<div class = "bt-cancel-friendship" friend-id="{ID}">'+
+	                                        '<img src="{IMGCLOSE}">'+
+	                                     '</div>'+
+	                                     '<hr>'+
+	                                 '</div>'+  
+	                            '</div>',
+	   
+	       'componentAddEvent' : '<div class="container-event">'+
+	       							'<div class="field">'+
+	       								'<div class="text"><span>{TEXT}</span></div>'+
+	       								'<div class="entry"><img src="{IMG}" id="calendar"></div>'+
+	       								'<input id="change-date-event" type="text" readonly="readonly" style="opacity: 0; cursor:default; width:10;"/>'+
+	       							'</div>'+
+	       							'<div class="field">'+
+	       								'<br/><div class="text"><span>{HOUR}</span></div>'+
+	       								'<div class="entry">'+
+											'<select id="hour" name="hour" class="required">'+
+	                                            '<option value="{00}">{ZERO}</option>'+
+	                                            '<option value="{03}">{ZEROTRINTA}</option>'+
+	                                            '<option value="{01}">{UM}</option>'+
+	                                            '<option value="{13}">{UMTRINTA}</option>'+
+	                                            '<option value="{02}">{DOIS}</option>'+
+	                                            '<option value="{23}">{DOISTRINTA}</option>'+
+	                                            '<option value="{30}">{TRES}</option>'+
+	                                            '<option value="{33}">{TRESTRINTA}</option>'+
+	                                            '<option value="{04}">{QUATRO}</option>'+
+	                                            '<option value="{43}">{QUATROTRINTA}</option>'+
+	                                            '<option value="{05}">{CINCO}</option>'+
+	                                            '<option value="{53}">{CINCOTRINTA}</option>'+
+	                                            '<option value="{06}">{SEIS}</option>'+
+	                                            '<option value="{63}">{SEISTRINTA}</option>'+
+	                                            '<option value="{07}">{SETE}</option>'+
+	                                            '<option value="{73}">{SETETRINTA}</option>'+
+	                                            '<option value="{08}">{OITO}</option>'+
+	                                            '<option value="{83}">{OITOTRINTA}</option>'+
+	                                            '<option value="{09}">{NOVE}</option>'+
+	                                            '<option value="{93}">{NOVETRINTA}</option>'+
+	                                            '<option value="{100}">{DEZ}</option>'+
+	                                            '<option value="{103}">{DEZTRINTA}</option>'+
+	                                            '<option value="{110}">{ONZE}</option>'+
+	                                            '<option value="{113}">{ONZETRINTA}</option>'+
+	                                            '<option value="{120}">{DOZE}</option>'+
+	                                            '<option value="{123}">{DOZERTRINTA}</option>'+
+	                                            '<option value="{130}">{TREZE}</option>'+
+	                                            '<option value="{133}">{TREZETRINTA}</option>'+
+	                                            '<option value="{140}">{QUATORZE}</option>'+
+	                                            '<option value="{143}">{QUATORZETRINTA}</option>'+
+	                                            '<option value="{150}">{QUINZE}</option>'+
+	                                            '<option value="{155}">{QUINZETRINTA}</option>'+
+	                                            '<option value="{160}">{DEZESSEIS}</option>'+
+	                                            '<option value="{163}">{DEZESSEISTRINTA}</option>'+
+	                                            '<option value="{170}">{DEZESSETE}</option>'+
+	                                            '<option value="{173}">{DEZESSETETRINTA}</option>'+
+	                                            '<option value="{180}">{DEZOITO}</option>'+
+	                                            '<option value="{183}">{DEZOITOTRINTA}</option>'+
+	                                            '<option value="{190}">{DEZENOVE}</option>'+
+	                                            '<option value="{200}">{VINTE}</option>'+
+	                                            '<option value="{203}">{VINTETRINTA}</option>'+
+	                                            '<option value="{210}">{VINTEUM}</option>'+
+	                                            '<option value="{213}">{VINTEUMTRINTA}</option>'+
+	                                            '<option value="{220}">{VINTEDOIS}</option>'+
+	                                            '<option value="{223}">{VINTEDOISTRINTA}</option>'+
+	                                            '<option value="{230}">{VINTETRES}</option>'+
+	                                            '<option value="{233}">{VINTETRESTRINTA}</option>'+
+	                                        '</select>'+
+										'</div>'+
+	       							'</div>'+
+	       							'<div class="field">'+
+	       								'<br/><div class="text"><span>{EVENTNAME}</span></div>'+
+	       								'<div class="entry"><input type="text" id="event-name"></div>'+
+	       							'</div>'+
+	       							'<div class="field">'+
+	       								'<br/><div class="text"><span>{WHERE}</span></div>'+
+	       								'<div class="entry"><input type="text" id="event-local"></div>'+
+	       							'</div>'+
+	       							'<div class="field">'+
+	       								'<br/><div class="text"><span>{WHO}</span></div>'+
+	       								'<div class="entry"><input type="text" id="event-who"></div>'+
+	       							'</div>'+
+	       							'<div class="field">'+
+	       								'<br/><div class="text"><span>{MORE}</span></div>'+
+	       								'<div class="entry"><textarea type="text" id="event-info" name="description"></textarea></div>'+
+	       							'</div>'+
+	       							'<div class="field">'+
+	       								'<br/><div class="text"><span>{PHONE}</span></div>'+
+	       								'<div class="entry"><input type="text" id="event-phone"></div>'+
+	       							'</div>'+
+	       							'<br/><div class="bt-confirm">'+
+	       								'<div class="button" id="bt-add-event">{ADD}</div>'+
+	       							'</div>'+
+	       						'</div>',
+	       	 'componentAddEventplace' : '<div class="container-event">'+
+	       							'<div class="field">'+
+	       								'<div class="text"><span>{TEXT}</span></div>'+
+	       								'<div class="entry"><img src="{IMG}" id="calendar"></div>'+
+	       								'<input id="change-date-event" type="text" readonly="readonly" style="opacity: 0; cursor:default; width:10;"/>'+
+	       							'</div>'+
+	       							'<div class="field">'+
+	       								'<br/><div class="text"><span>{HOUR}</span></div>'+
+	       								'<div class="entry">'+
+											'<select id="hour" name="hour" class="required">'+
+	                                            '<option value="{00}">{ZERO}</option>'+
+	                                            '<option value="{03}">{ZEROTRINTA}</option>'+
+	                                            '<option value="{01}">{UM}</option>'+
+	                                            '<option value="{13}">{UMTRINTA}</option>'+
+	                                            '<option value="{02}">{DOIS}</option>'+
+	                                            '<option value="{23}">{DOISTRINTA}</option>'+
+	                                            '<option value="{30}">{TRES}</option>'+
+	                                            '<option value="{33}">{TRESTRINTA}</option>'+
+	                                            '<option value="{04}">{QUATRO}</option>'+
+	                                            '<option value="{43}">{QUATROTRINTA}</option>'+
+	                                            '<option value="{05}">{CINCO}</option>'+
+	                                            '<option value="{53}">{CINCOTRINTA}</option>'+
+	                                            '<option value="{06}">{SEIS}</option>'+
+	                                            '<option value="{63}">{SEISTRINTA}</option>'+
+	                                            '<option value="{07}">{SETE}</option>'+
+	                                            '<option value="{73}">{SETETRINTA}</option>'+
+	                                            '<option value="{08}">{OITO}</option>'+
+	                                            '<option value="{83}">{OITOTRINTA}</option>'+
+	                                            '<option value="{09}">{NOVE}</option>'+
+	                                            '<option value="{93}">{NOVETRINTA}</option>'+
+	                                            '<option value="{100}">{DEZ}</option>'+
+	                                            '<option value="{103}">{DEZTRINTA}</option>'+
+	                                            '<option value="{110}">{ONZE}</option>'+
+	                                            '<option value="{113}">{ONZETRINTA}</option>'+
+	                                            '<option value="{120}">{DOZE}</option>'+
+	                                            '<option value="{123}">{DOZERTRINTA}</option>'+
+	                                            '<option value="{130}">{TREZE}</option>'+
+	                                            '<option value="{133}">{TREZETRINTA}</option>'+
+	                                            '<option value="{140}">{QUATORZE}</option>'+
+	                                            '<option value="{143}">{QUATORZETRINTA}</option>'+
+	                                            '<option value="{150}">{QUINZE}</option>'+
+	                                            '<option value="{155}">{QUINZETRINTA}</option>'+
+	                                            '<option value="{160}">{DEZESSEIS}</option>'+
+	                                            '<option value="{163}">{DEZESSEISTRINTA}</option>'+
+	                                            '<option value="{170}">{DEZESSETE}</option>'+
+	                                            '<option value="{173}">{DEZESSETETRINTA}</option>'+
+	                                            '<option value="{180}">{DEZOITO}</option>'+
+	                                            '<option value="{183}">{DEZOITOTRINTA}</option>'+
+	                                            '<option value="{190}">{DEZENOVE}</option>'+
+	                                            '<option value="{200}">{VINTE}</option>'+
+	                                            '<option value="{203}">{VINTETRINTA}</option>'+
+	                                            '<option value="{210}">{VINTEUM}</option>'+
+	                                            '<option value="{213}">{VINTEUMTRINTA}</option>'+
+	                                            '<option value="{220}">{VINTEDOIS}</option>'+
+	                                            '<option value="{223}">{VINTEDOISTRINTA}</option>'+
+	                                            '<option value="{230}">{VINTETRES}</option>'+
+	                                            '<option value="{233}">{VINTETRESTRINTA}</option>'+
+	                                        '</select>'+
+										'</div>'+
+	       							'</div>'+
+	       							'<div class="field">'+
+	       								'<br/><div class="text"><span>{EVENTNAME}</span></div>'+
+	       								'<div class="entry"><input type="text" id="event-name"></div>'+
+	       							'</div>'+
+	       							'<div class="field">'+
+	       								'<br/><div class="text"><span>{MORE}</span></div>'+
+	       								'<div class="entry"><textarea type="text" id="event-info" name="description"></textarea></div>'+
+	       							'</div>'+
+	       							'<div class="field">'+
+	       								'<br/><div class="text"><span>{COST}</span></div>'+
+	       								'<div class="entry"><input type="text" id="event-cost"></div>'+
+	       							'</div>'+
+	       							'<br/><div class="bt-confirm">'+
+	       								'<div class="button" id="bt-add-event">{ADD}</div>'+
+	       							'</div>'+
+	       						'</div>',
+	       	'formRegister' : 	'<div id="menu-register">'+
+  								'<div id="menu-1" class="tab-active">1. Your user name and Password<img class="tab-shadow" src="style/img/buttons/bt_relief.jpg"/></div>'+
+  								'<div id="menu-2" class="tab"><img class="tab-shadow-reverse" src="style/img/buttons/bt_relief_mirror.jpg"/>2. About You</div>'+
+								'</div>'+
+								'<div id="view-mandatory-form">'+
+								'<form id="form-register" method="post">'+
+	       						'<h1>{LOGIN}</h1>' +
+								'<table>' +
+								'<tr>' +
+								'<td>{USERNAME}</td>' +
+								'<td><input id="reg-username" type="text" name="reg-username" class="required"   minlength="5" />' +
+								'<label class="error" for="reg-username" style="display: none" generated="true"></label></td>' +
+								'</tr>' +
+								'<tr>' +
+								'<td>{PASSWORD}</td>' +
+								'<td><input id="reg-password" type="password" name="reg-password" class="required password" minlength="4" /></td>' +
+								'</tr>' +
+								'<tr>' +
+								'<td>{RE-ENTER YOUR PASSWORD}</td>' +
+								'<td><input id="reg-password2" type="password" name="reg-rpassword" class="required password" equalTo="#reg-password" minlength="4" /></td>' +
+								'</tr>' +
+								'<tr style="display:none">' +
+								'<td>{FIRST NAME}</td>' +
+								'<td><input id="reg-firstname" type="text" name="reg-firstname" class="required" minlength="2" /></td>' +
+								'</tr>' +
+								'<tr style="display:none">' +
+								'<td>{LAST NAME}</td>' +
+								'<td><input id="reg-lastname" type="text" name="reg-lastname" class="required" minlength="2" /></td>' +
+								'</tr>' +
+								'<tr style="display:none">' +
+								'<td>{GENDER}</td>' +
+								'<td><select id="reg-gender" name="reg-gender">' +
+								'<option value="N">{SELECT GENDER}</option>' +
+								'<option value="M">{MALE}</option>' +
+								'<option value="F">{FEMALE}</option>' +
+								'</select>' +
+								'</td>' +
+								'</tr>' +
+								'<tr>' +
+								'<td>{E-MAIL}</td>' +
+								'<td><input id="reg-email" type="text" name="reg-email" class="required email" />' +
+								'<label class="error" for="reg-email" style="display: none" generated="true"></label></td>' +
+								'</tr>' +
+								//'<tr>' +
+								//'<label class="error" for="reg-twitter" style="display: none" generated="true"></label></td>' +
+								//'</tr>' +
+								'<tr style="display:none">' +
+								'<td>{COUNTRY YOU LIVE IN}</td>' +
+								'<td><select id="reg-country" name="reg-country" class="required">' +
+								'</select></td>' +
+								'</tr>' +
+								'<tr style="display:none>' +
+								'<td>{CITY YOU LIVE IN}</td>' +
+								'<td><input id="reg-city" type="text" name="reg-city" class="required" /></td>' +
+								'</tr>' +
+								'<tr style="display:none">' +
+								'<td>{DATE OF BIRTH}</td>' +
+								'<td><input id="reg-birthdate" type="text" readonly name="reg-birthdate" class="required date" />&nbsp;aaaa/mm/dd <label class="" for="birthdate" generated="true"></label></td>' +
+								'</tr>' +
+								'</table>' +
+								'<h1>{TERMS AND CONDITIONS}</h1>' +
+								'<input type="checkbox" name="reg-terms" class="required" />' +
+								'<div class="checkbox-value">{I have read and agree to the} <a href="?page=terms">{WHATOODO SERVICE TERMS}</a> {AND THE} <a href="#">{PRIVACY POLICY}</a>.</div>' +
+								'<br/><label class="error" for="reg-terms" generated="true"  style="display: none; margin-left: 50px; font-size: .7em; padding-top: 1px"></label>' +
+								'<div class="button-bar">' +
+								'<input id="btn-continue-1" class="btn-continue button" type="button" name="continue" value="Continue" />' +
+								'</div>' +
+								'</div>' +
+								'</a>' +
+								'</div>'+
+								'<div id="view-preferences-form" class="preferences-form">' +
+								'<div id="left-categories" class="left-categories">' +
+								//*****Code from register.js*****
+								'</div>' +
+								'<div id="right-categories" class="right-categories">' +
+								'<table id="elements-table" class="elements-table" border="0">'+
+								//*****Code from register.js*****
+								'</table>'+
+								'</div>' +
+								'<div id="down-categories" class="down-categories">' +
+								'<h1 id="down-title">Do You Like?</h1>' +
+								'<div id="category-rating-container" class="rating-container">'+
+								
+								//*****Code from register.js*****
+								'</div>'+
+								'<div class="button-bar">' +
+								'<input id="finish" class="button" type="button" name="finish" value="Finish"/>' +
+								'</div>' +
+								'</div>' +
+								'</form>',
+		'PlaceActivity' : '<div class="recent-activity-container">'+
+								'<div class="recent-activity-container-text">{ACTIVITY}</div>'+
+								'<div class="menu-sharing" id="menu-sharing">'+
+									'<div class="menu-sharing-options">'+
+										'<div class="menu-sharing-text" id="sharing-title">{SHARINGTEXT} </div>'+
+										'<div class="menu-sharing-all">'+
+											'<div class="menu-sharing-text2" id="About">{ABOUTTEXT}</div>'+
+											'<div class="menu-sharing-images1"><img src="{ICONSTATUS}"></img></div>'+
+										'</div>'+
+										'<div class="menu-sharing-all">'+
+											'<div class="menu-sharing-text2" id="Promotions">{PROMOTIONSTEXT}</div>'+
+											'<div class="menu-sharing-images1"><img src="{ICONMONEY}"></img></div>'+
+										'</div>'+
+										'<div class="rating-place-for-user">'+
+											'<div class="stars">'+
+												'<span rate="0" id="ratings" style="float: right" class="rating"></span>'+
+											'</div><br/>'+
+										'</div>'+
+									'</div>'+
+								'</div>'+
+								'<div class="avaliation-user-place">'+
+									'<div class="arrow-image">'+
+										'<img src="{ARROWUP}"/>'+
+									'</div>'+
+									'<div class="description-area">'+
+										'<textarea id="dsc-area" ></textarea>'+
+									'</div>'+
+									'<div class="review">'+
+										'<div class="buttons">'+
+											'<div class="button bt-request-confirm" id="bt-confirm-review">{REVIEW}</div>'+
+										'</div>'+
+									'</div>'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="plc-description">'+
+										'<div class="recent-activity-container-text">'+
+											'<div class="recent-activity-text-container">{DESCRIPTION}'+
+												'<div class="menu-sharing-images1"><img src="{IMGDESCRIPTION}"/></div>'+
+											'</div>'+
+										'</div>'+
+									'</div>'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="place-description-actual" id="place-description-actual">{PLACEDESCRIPTION}</div>'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="place-info-title">'+
+										'<div class="recent-activity-container-text">'+
+										'<div class="recent-activity-text-container">{INFO}'+
+											'<div class="menu-sharing-images2"><img src="{IMGINFO}"/></div>'+
+										'</div>'+
+									'</div>'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="place-categorie">'+
+										'<div class="place-address">'+
+											'<div class="menu-sharing-images2"><img src="{ICONPLACE}"/></div>'+
+												'<div class="place-address-text" id="tags"></div>'+
+												'<br/>'+
+												'<div class="pla_address">{PLACEADDRESS}</div>'+
+											'</div>'+
+											'<div class="tel-one">'+
+												'<div class="menu-sharing-images2"><img src="{ICONTEL}"/></div>'+
+												'<div class="place-address-text">{TEL}</div>'+
+											'</div>'+
+											'<div class="website">'+
+												'<img src="{WEBSITEIMG}"/>'+
+												'{WEBSITE}'+
+											'</div>'+
+									'</div>'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="view-reviews">'+
+										'<div class="recent-activity-container-text">'+
+											'<div class="recent-activity-text-container">{REVIEW}'+
+												'<div class="menu-sharing-images1"><img src="{IMGREVIEW}"/></div>'+
+											'</div>'+
+										'</div>'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="comment-view" id="cmt-view">'+
+										
+									'</div>'+
+							'</div>',
+			'PlaceActivityMin' : '<div class="recent-activity-container">'+
+								'<div class="recent-activity-container-text">{ACTIVITY}</div>'+
+								'<div class="avaliation-user-place">'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="plc-description">'+
+										'<div class="recent-activity-container-text">'+
+											'<div class="recent-activity-text-container">{DESCRIPTION}'+
+												'<div class="menu-sharing-images1"><img src="{IMGDESCRIPTION}"/></div>'+
+											'</div>'+
+										'</div>'+
+									'</div>'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="place-description-actual" id="place-description-actual">{PLACEDESCRIPTION}</div>'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="place-info-title">'+
+										'<div class="recent-activity-container-text">'+
+										'<div class="recent-activity-text-container">{INFO}'+
+											'<div class="menu-sharing-images2"><img src="{IMGINFO}"/></div>'+
+										'</div>'+
+									'</div>'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="place-categorie">'+
+										'<div class="place-address">'+
+											'<div class="menu-sharing-images2"><img src="{ICONPLACE}"/></div>'+
+												'<div class="place-address-text" id="tags"></div>'+
+												'<br/>'+
+												'<div class="pla_address">{PLACEADDRESS}</div>'+
+											'</div>'+
+											'<div class="tel-one">'+
+												'<div class="menu-sharing-images2"><img src="{ICONTEL}"/></div>'+
+												'<div class="place-address-text">{TEL}</div>'+
+											'</div>'+
+											'<div class="website">'+
+												'<img src="{WEBSITEIMG}"/>'+
+												'{WEBSITE}'+
+											'</div>'+
+									'</div>'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="view-reviews">'+
+										'<div class="recent-activity-container-text">'+
+											'<div class="recent-activity-text-container">{REVIEW}'+
+												'<div class="menu-sharing-images1"><img src="{IMGREVIEW}"/></div>'+
+											'</div>'+
+										'</div>'+
+									'<hr style="width: 495px !important; margin-left: -10px !important"></hr>'+
+									'<div class="comment-view" id="cmt-view">'+
+										
+									'</div>'+
+							'</div>',
+			'componentAbout' : '<div class="menu-terms" id="menu-terms">'+
+									'<div class="title">{TITLE}</div>'+
+									'<h3></h3>'+
+									'<h>{PARAM01}</h>'+
+									'<h3>{TITLE02}</h3>'+
+									'<h>{PARAM02}</h>'+
+									'<h3>{TITLE03}</h3>'+
+									'<h>{PARAM03}</h>'+
+									'<h3>{TITLE04}</h3>'+
+									'<h>{PARAM04}</h>'+
+									'<h3>{TITLE05}</h3>'+
+									'<h>{PARAM05}</h>'+
+									'<h3>{TITLE06}</h3>'+
+									'<h>{PARAM06}</h>'+
+									'<h3>{TITLE07}</h3>'+
+									'<h>{PARAM07}<h3>{CONTATO}</h3></h>'+
+								'</div>',
+			'componentHelp' : '<div class="menu-terms">'+
+								'<h>{PARAM01}</h>'+
+								'<h3></h3>'+
+								'<h>{PARAM02}</h>'+
+								'<h3></h3>'+
+								'<h>{PARAM03}</h>'+
+								'<h3></h3>'+
+								'<h>{PARAM04}</h>'+
+							'</div>',
+			'componentPrivacy' : '<div class="menu-terms">'+
+									'<div class="title">{TITLE}</div>'+
+									'<h3></h3>'+
+									'<h4>{PARAM01}</h4>'+
+									'<h3>{TITLE01}</h3>'+
+									'<h3></h3>'+
+									'<h3>{TITLE02}</h3>'+
+									'<h3></h3>'+
+									'<h3>{TITLE03}</h3>'+
+									'<h3></h3>'+
+									'<h3>{TITLE04}</h3>'+
+									'<h3></h3>'+
+									'<h3>{TITLE05}</h3>'+
+									'<h3></h3>'+
+									'<h3>{TITLE06}</h3>'+
+									'<h3></h3>'+
+									'<h3>{TITLE07}</h3>'+
+									'<h3></h3>'+
+									'<h3>{TITLE08}</h3>'+
+									'<h3></h3>'+
+									'<h3>{TITLE09}</h3>'+
+									'<h3></h3>'+
+									'<h3>{TITLE10}</h3>'+
+									'<h3></h3>'+
+									'<h3>{TITLE11}</h3>'+
+									'<h3></h3>'+
+									'<h>{PARAM02}</h>'+
+									'<h3></h3>'+
+									'<h3>{TITLE12}</h3>'+
+									'<h>{PARAM03}</h>'+
+									'<h3>{TITLE13}</h3>'+
+									'<h>{PARAM04}</h>'+
+									'<h3>{TITLE14}</h3>'+
+									'<h>{PARAM05}</h>'+
+									'<h3>{TITLE15}</h3>'+
+									'<h>{PARAM06}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM07}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM08}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM09}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM10}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM11}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM12}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM13}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM14}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM15}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM16}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM17}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM18}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM19}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM20}</h>'+
+									'<h3>{TITLE16}</h3>'+
+									'<h>{PARAM21}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM22}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM23}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM24}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM25}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM26}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM27}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM28}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM29}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM30}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM31}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM32}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM33}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM34}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM35}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM36}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM37}</h>'+
+									'<h3>{TITLE17}</h3>'+
+									'<h>{PARAM47}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM48}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM49}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM50}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM51}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM52}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM53}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM54}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM55}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM56}</h>'+
+									'<h3>{TITLE18}</h3>'+
+									'<h>{PARAM57}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM58}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM59}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM60}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM61}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM62}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM63}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM64}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM65}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM66}</h>'+
+									'<h3></h3>'+
+									'<h3>{TITLE19}</h3>'+
+									'<h>{PARAM69}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM70}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM71}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM72}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM73}</h>'+
+									'<h3>{TITLE20}</h3>'+
+									'<h>{PARAM74}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM75}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM76}</h>'+
+									'<h3>{TITLE21}</h3>'+
+									'<h>{PARAM76}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM77}</h>'+
+									'<h3></h3>'+
+									'<h>{PARAM78}</h>'+
+							'</div>',
+			'componentPreferences' :'<div class="content-left">'+
+										'<div id="box-img-profile" class="box-img-profile">'+
+										/********* **********/
+										'</div>'+
+										'<div id="box-menu-profile">'+
+										/********* **********/
+										'</div>'+
+									'</div>'+
+									
+									'<div class="preferences-content">'+
+										'<div id="view-preferences-form" class="preferences-form">'+
+											'<div id="left-categories" class="left-categories">'+
+											'<div id="maincategory-container">'+
+											/**********Code from preferences.js**********/
+											'</div>'+
+											'<div class="button-bar">'+
+												'<input id="finish" class="button" type="button" name="finish" value="Save"/>'+
+											'</div>'+
+											'</div>'+
+											'<div class="categories-container">'+
+											'<div id="right-categories" class="right-categories">'+
+												'<h6 id="down-title">{RATE YOUR INTERESTS}</h6>'+
+												'<div id="category-rating-container" class="rating-container">'+
+												/**********Code from preferences.js**********/
+												'</div>'+
+												
+											'</div>'+
+											'<hr>'+
+											'<div id="down-categories" class="down-categories">'+
+												'<table id="elements-table" class="elements-table" border="0">'+
+												/**********Code from preferences.js**********/
+												'</table>'+
+											'</div>'+
+											'</div>'+
+											
+										'</div>'+
+									'</div>',
+			'componentChangePhoto' : '<div class="profile-photo">'+
+										'<form id="change" method="POST" enctype="multipart/form-data" action="http://www.whatoodo.com/rest_api/v1/changePhoto.php" name="changephoto">'+
+											'<label>{PROFILETITLE}</label><br/>'+
+											'<div class="warning"><label>{WARNING}</label></div>'+
+											'<input type="file" name="userphoto" id="photouser"><br/>'+
+											'<div class="bt-request-confirm" id="bt-changephoto"/>'+
+												'<input type="submit" name="changephoto" value="Send"/>'+
+											'</div>'+
+										'</form>'+
+									 '</div>',
+			'componentChangePhotoEvent' : '<div class="profile-photo">'+
+										'<form id="change" method="POST" enctype="multipart/form-data" action="http://www.whatoodo.com/rest_api/v1/changePhotoEvent.php" name="changephoto">'+
+											'<label>{PROFILETITLE}</label><br/>'+
+											'<input type="file" name="userphoto" id="photouser"><br/>'+
+											'<input type="hidden" id="eventid" name="eventid" value="{ID}">'+
+											'<div class="bt-request-confirm" id="bt-changephoto"/>'+
+												'<input type="submit" name="changephoto" value="Send"/>'+
+											'</div>'+
+										'</form>'+
+									 '</div>'+
+									 '<div class="current-photo">'+
+									 	'<img class="userphoto" src="{IMGPROFILE}" />'+
+									 '</div>',
+			'componentChangePhotoPlace' : '<div class="profile-photo">'+
+										'<form id="change" method="POST" enctype="multipart/form-data" action="http://www.whatoodo.com/rest_api/v1/changePhotoPlace.php" name="changephoto">'+
+											'<label>{PROFILETITLE}</label><br/>'+
+											'<input type="file" name="userphoto" id="photouser"><br/>'+
+											'<input type="hidden" id="placeid" name="placeid" value="{ID}">'+
+											'<div class="bt-request-confirm" id="bt-changephoto"/>'+
+												'<input type="submit" name="changephoto" value="Send"/>'+
+											'</div>'+
+										'</form>'+
+									 '</div>'+
+									 '<div class="current-photo">'+
+									 	'<img class="userphoto" src="{IMGPROFILE}" />'+
+									 '</div>',
+			'componentAccountSetting' : '<div class="editaccount-container">'+
+											'<div class="editprofile-line">'+
+												'<div class="editprofile-label">{USERNAMELABEL}</div>'+
+												'<div class="editprofile-input">{USERNAME}</div>'+
+												'<div class="editprofile-edit"></div>'+
+											'</div>'+
+											'<div class="editprofile-line">'+
+												'<div class="editprofile-label">{PASSLABEL}</div>'+
+												'<div class="editprofile-input">*****************</div>'+
+												'<div id="edit-password" class="editprofile-edit">Edit</div>'+
+											'</div>'+
+											'<div class="editprofile-line">'+
+												'<div class="editprofile-label">{EMAILLABEL}</div>'+
+												'<div class="editprofile-input">{EMAIL}</div>'+
+												'<div id="edit-email" class="editprofile-edit">Edit</div>'+
+											'</div>'+
+										'</div>'
+		
+};	
+window.template = template;

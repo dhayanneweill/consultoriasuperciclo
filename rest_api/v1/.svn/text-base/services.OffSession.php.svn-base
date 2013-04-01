@@ -1,0 +1,285 @@
+<?php
+//Raw protection
+if (!$GET_service || $GET_service != "placeAdd" || !$_SESSION['loggeduser']['id']) {
+	die("<script>window.location='../?'</script>");
+}
+//Beggining on the validations
+$name = mysql_real_escape_string($_POST["placename"]);
+$description = mysql_real_escape_string($_POST["description"]);
+$address = mysql_real_escape_string($_POST["address"]);
+$city = mysql_real_escape_string($_POST["city"]);
+$state = mysql_real_escape_string($_POST["state"]);
+$country = mysql_real_escape_string($_POST["country"]);
+//Data from checkboxes
+$parking = mysql_real_escape_string($_POST["parking"]);
+$accessible = mysql_real_escape_string($_POST["accessible"]);
+$delivery = mysql_real_escape_string($_POST["delivery"]);
+$smoking = mysql_real_escape_string($_POST["smoking"]);
+$livemusic = mysql_real_escape_string($_POST["livemusic"]);
+$playroom = mysql_real_escape_string($_POST["playroom"]);
+$wifi = mysql_real_escape_string($_POST["wifi"]);
+$waiter = mysql_real_escape_string($_POST["waiter"]);
+$reservation = mysql_real_escape_string($_POST["reservation"]);
+
+$cost = mysql_real_escape_string($_POST["mediumcost"]);
+//$days, $starthours and $endhours are arrays
+$days = $_POST["days"];
+$starthours = $_POST["start"];
+$endhours = $_POST["end"];
+$promodays = $_POST["promodays"];
+
+$phone1 = mysql_real_escape_string($_POST["phone"]);
+$phone2 = mysql_real_escape_string($_POST["cellphone"]);
+$twitter = mysql_real_escape_string($_POST["twitter"]);
+$website = mysql_real_escape_string($_POST["website"]);
+$cards = $_POST["cards"];
+$email = mysql_real_escape_string($_POST["email"]);
+$category = mysql_real_escape_string($_POST["placecategory"]);
+$subcategories = $_POST["subcategory"];
+$othercategories = $_POST["othercategories"];
+$division = explode(" ",$othercategories);
+
+$allcategories = array_merge($division, $subcategories);
+//$tags = ""
+//for ($i = 0; ){
+//  explode(" ", str_replace(",", " ",$_POST["place-tags"]));
+//}
+// if (!$name || !$description || !$city || !$state || !$country) {
+// 	error("One or more fields are empty!");
+// 	return;
+// }
+// //Valida país
+// $result = $db->select_one("SELECT printable_name FROM country WHERE iso = '".$country."'");
+// if ($result == "" || !$result) {
+// 	error("Invalid country!");
+// 	return;
+// }
+// //Código para manejar a Foto
+// if ($photo['name']) {
+// 	$dir="uploads/places/";
+// 	if (!in_array(end(explode(".", $photo['name'])), $CONFIG_image_allowed_extensions)) {
+// 		error("Invalid file format!");
+// 		return;
+// 	}
+// 	if (($photo['size'] / 1024) > $CONFIG_max_thumb_photo_size) {
+// 		error("Photo cannot exceed 700Kb!");
+// 		return;
+// 	}
+// 	$imagespecs = getimagesize($photo['tmp_name']);
+// 	$imagewidth = $imagespecs[0];
+// 	$imageheight = $imagespecs[1];
+// 	if ($imagewidth > $CONFIG_max_thumb_photo_width || $imageheight > $CONFIG_max_thumb_photo_height) {
+// 		error("Image dimensions are too big.");
+// 		return;
+// 	}
+// }
+ 
+$db->begin();
+$result1 = $db->insert_sql("INSERT INTO `place` (`pla_name`, `pla_description`, `pla_address`, `pla_city`, `pla_state`, `pla_country`, `pla_cost`, `pla_telephone1`, `pla_telephone2`, `pla_website`, `pla_email`, `pla_twitter`, `pla_hasParking`, `pla_hasWChairAccess`, `pla_hasDelivery`, `pla_hasSmoking`, `pla_hasPlayroom`, `pla_hasWifi`, `pla_hasWaiter`, `pla_hasReservation`, `pla_hasLiveMusic`, `acc_id`)
+                                        VALUES ('".$name."', '".$description."', '".$address."', '".$city."', '".$state."', '".$country."', '".$cost."', '".$phone1."', '".$phone2."', '".$website."', '".$email."', '".$twitter."', '".$parking."', '".$accessible."', '".$delivery."', '".$smoking."', '".$playroom."', '".$wifi."', '".$waiter."', '".$reservation."', '".$livemusic."','".$_SESSION['loggeduser']['id']."');");
+
+//if (isset($photo)) {
+  //Upload photo
+//  $ftp = new ClsFTP($CONFIG_ftp_user, $CONFIG_ftp_pass, $CONFIG_ftp_host, $CONFIG_ftp_port);
+//  $ftp->cd($CONFIG_ftp_dir.$CONFIG_image_path_places);
+  //Nomear a foto
+//	$photoname = time() . "_" . $result1 . "_n." . end(explode(".", $photo['name']));
+	//Fazer upload
+//  $ftp->put($photoname, $photo['tmp_name']);
+  //Gravar em banco
+//	$result1b = $db->update_sql("UPDATE `place` SET `pla_photo` = '".$photoname."' WHERE `pla_id` = '".$result1."'");
+//}
+
+$i = 0;
+$values = "";
+while ($i < sizeof($allcategories)) {
+	if ($allcategories[$i] != "") {
+		$values .= ", (".$result1.", '". strtolower($allcategories[$i]) ."')";
+	}
+	$i++;
+}
+if ($i == 0) { $values = ""; }
+$result2 = $db->insert_sql("INSERT INTO `placetags` (`pla_id`, `plt_tag`) VALUES (".$result1.", '". strtolower($category) ."')".$values.";");
+
+$i = 0;
+$values = "";
+while ($i < sizeof($days)) {
+  if ($i == 0 ){
+    $values .= "(".$result1.", '". $days[$i] ."', '". $starthours[$i] ."', '". $endhours[$i] ."', '". $promodays[$i] ."')";
+  }else{
+    $values .= ", (".$result1.", '". $days[$i] ."', '". $starthours[$i] ."', '". $endhours[$i] ."', '". $promodays[$i] ."')";
+  }
+  $i++;
+}
+
+$result3 = $db->insert_sql("INSERT INTO `businesstime` (`pla_id`, `bus_day`, `bus_start`, `bus_end`, `bus_promoday`) VALUES ".$values.";");
+
+$i = 0;
+$values = "";
+while ($i < sizeof($cards)) {
+  if ($i == 0 ){
+    $values .= "(".$result1.", '". $cards[$i] ."')";
+  }else{
+    $values .= ", (".$result1.", '". $cards[$i] ."')";
+  }
+  $i++;
+}
+
+$result4 = $db->insert_sql("INSERT INTO `placepaymethod` (`pla_id`, `pla_pay`) VALUES ".$values.";");
+if ($result1 && $result2 && $result3 && $result4) {
+    $db->commit();
+    die(json_encode(Array("status" => "OK")));
+  } else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+  }
+
+?><?php
+//Raw protection
+if (!$GET_service || $GET_service != "register") {
+  die("<script>window.location='../?'</script>");
+}  
+require_once('../library/class.phpmailer.php');
+  //Beggining on the validations
+  $data = $POST_data;
+  if ($data["type"] == 1) {
+    $result = $db->select_one("SELECT acc_username FROM useraccount WHERE acc_username LIKE '".$data["username"]."' ");
+    if ($result != "") {
+      die("ALREADYEXISTS");
+    } else {
+      die("OK");
+    }
+  }
+  else {
+    $username = $data["username"];
+    $password = $data["password"];
+    $firstname = $data["firstname"];
+    $lastname = $data["lastname"];
+    $email = $data["email"];
+	$twitter = $data["twitter"];
+    $country = $data["country"];
+    $city = $data["city"];
+    $birthdate = $data["birthdate"];
+    $preferences = $data["preferences"];
+    $gender = $data["gender"];
+    if (!$username || !$password || !$firstname || !$lastname || !$email || !$country || !$city || !$birthdate || !$preferences) {
+      die("EMPTYFIELDS");
+    }
+    $db->begin();
+    //Valida username novamente
+    $result = $db->select_one("SELECT acc_username FROM useraccount WHERE acc_username LIKE '".$data["username"]."' ");
+    if ($result != "") {
+      die("ERROR");
+    } elseif (!check_email_address($email)) {
+      die("ERROR");
+    }
+    $result = $db->select_one("SELECT printable_name FROM country WHERE iso = '".$country."'");
+    if ($result == "" || !$result) {
+      die("ERROR");
+    }
+    if ($db->select_one("SELECT acc_email FROM useraccount WHERE acc_email = '$email'")) {
+      die("ERROR");
+    }
+    $key = createRandomKey(20);
+    while ($db->select_one("SELECT acc_key FROM useraccount WHERE acc_key = ".$key)) {
+        $key = createRandomKey(20);  
+    }
+    
+    $result1 = $db->insert_sql("INSERT INTO `useraccount` (`acc_username` ,`acc_password` ,`acc_email`, `acc_verificationkey`, `acc_twitter`)VALUES ('".$username."', '".$password."', '".$email."', '".$key."', '".$twitter."');");
+	$acc_id = $result1;
+    $result2 = $db->insert_sql("INSERT INTO `userprofile` (`acc_id`, `usp_firstname` ,`usp_lastname`, `usp_gender`, `usp_birthdate`, `usp_city`, `usp_country`)VALUES ('".$result1."', '".$firstname."', '".$lastname."', '".$gender."', '".$birthdate."', '".$city."', '".$country."');");
+	$result4 = $db->insert_sql("INSERT INTO `privacyrelationshipuser` (`acc_id`, `id_relationship`, `prs_privacy`)VALUES('".$acc_id."','1','friends-only')");
+	$result5 = $db->insert_sql("INSERT INTO `privacysettings` (`acc_id`, `prv_visibility`, `prv_description`,`prv_profile_photo`,
+	`prv_feed`,`prv_address`,`prv_cell`,`prv_mail`,`prv_website`,`prv_places`)VALUES('".$acc_id."','all-people','all-people','all-people',
+		'all-people','all-people','all-people','all-people','all-people','all-people')");
+    $i = 0;
+    $values = "";
+    while ($i < sizeof($preferences)) {
+      $j = 0;
+      if (!isset($preferences[$i]["stars"])) { $preferences[$i]["stars"] = Array(); }
+      while ($j < sizeof($preferences[$i]["stars"])) {
+        $values .= "('".$result1."', '". $preferences[$i]["stars"][$j]["categoryid"] ."', '".$preferences[$i]["stars"][$j]["rating"]."')";        
+        if ($j < (sizeof($preferences[$i]["stars"]) - 1) || $i < (sizeof($preferences) - 1)) { $values .= ", "; }
+        $j++;
+      }
+      $i++;
+    }
+    
+    //Send Email
+    //inicio para enviar email
+  	$mail = new PHPMailer();
+  
+  	$mail->IsSMTP();
+  	$mail->SMTPSecure = "tls"; // set mailer to use SMTP
+  	$mail->Host = MailHost();  // specify main and backup server
+  	$mail->SMTPAuth = true; // turn on SMTP authentication
+  	$mail->Username = MailUser();  // SMTP username
+  	$mail->Password = MailPasswd(); // SMTP password
+  
+  	$mail->From = "whatoodo@whatoodo.com";
+  	$mail->FromName = "Validation key";
+  	$mail->AddAddress($email);
+  
+  	$mail->Subject = "Whatoodo validation key";
+  	$mail->Body    = "Hi ".$username."\n\nThe link is: http://www.whatoodo.com/verify.php?key=".$key;
+  
+  	if(!$mail->Send()) {
+     		echo "Message could not be sent. <p>";
+     		echo "Mailer Error: " . $mail->ErrorInfo;
+     		exit;
+  	}	
+    //
+    
+    if (substr($values, -2) == ", ") { $values = substr($values, 0, sizeof($values) - 3); }
+    $result3 = $db->insert_sql("INSERT INTO `userpreferences` (`acc_id` , `cat_id` , `pre_rating`)VALUES ".$values.";");
+    if ($result1 && $result2 && $result3) {
+      $db->commit();
+      if (isset($_SESSION['registermail'])) {
+          unset($_SESSION['registermail']);
+      }
+      die("OK");
+    } else {
+      $db->rollback();
+      die("ERROR");
+    }
+  }
+?>
+<?php
+//Raw protection 
+if (!$GET_service || $GET_service != "verifyEmail") {
+  die("<script>window.location='../?'</script>");
+}
+header('Content-Type: text/json; charset=UTF-8');
+
+//Gathers data
+$email = mysql_escape_string($_POST['email']);
+
+$result = $db->select_one("SELECT acc_email FROM useraccount WHERE acc_email = '$email'");
+
+if ($result) {
+  $return = array();
+  $return['status'] = "ALREADYTAKEN";
+  die(json_encode($return));
+} else {
+  die(json_encode(Array("status" => "OK")));
+} 
+?><?php
+//Raw protection 
+if (!$GET_service || $GET_service != "verifyTwitter") {
+  die("<script>window.location='../?'</script>");
+}
+header('Content-Type: text/json; charset=UTF-8');
+
+//Gathers data
+$twitter = mysql_escape_string($_POST['twitter']);
+
+$result = $db->select_one("SELECT acc_twitter FROM useraccount WHERE acc_twitter = '$twitter'");
+
+if ($result) {
+  $return = array();
+  $return['status'] = "ALREADYTAKEN";
+  die(json_encode($return));
+} else {
+  die(json_encode(Array("status" => "OK")));
+} 
+?>

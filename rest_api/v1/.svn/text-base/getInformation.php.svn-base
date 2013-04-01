@@ -1,0 +1,76 @@
+<?php
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+$eventid = $_POST['eventid'];
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+//PhotoPlace
+$result = $db->select("SELECT *  FROM events WHERE eve_id = '$eventid' ");
+$result = $db->get_row($result);
+if($result['eve_photo'] == '' ) {
+	$photo = 'style/img/icons/camera-icon.png';	
+}else{
+	$thumb = str_replace("_n", "_t", $results['eve_photo']);
+	$photo = $CONFIG_image_host.$CONFIG_image_path_events.$thumb; 
+}
+
+$eventData .= '{"id":"'.$result['eve_id'].'","photo":"'.$photo.'","acc_id":"'.$_SESSION['loggeduser']['id'].'",
+				"userowner":"'.$result['acc_id'].'","eve_name":"'.$result['eve_name'].'","when":"'.$result['eve_when'].'",
+				"hour":"'.$result['eve_hour'].'","where":"'.$result['eve_where'].'","eve_phone":"'.$result['eve_phone'].'",
+				"cellphone":"'.$result['eve_cellphone'].'","eventInfo":"'.$result['eve_info'].'","cost":"'.$result['eve_cost'].'","userlogged":"'.$_SESSION['loggeduser']['id'].'"}';
+				
+//Comments
+$comment = $db->select("SELECT eventcomment.cmt_id, eventcomment.eve_comment, eventcomment.acc_id, userprofile.usp_firstname, userprofile.usp_lastname, userprofile.usp_photo 
+						FROM eventcomment, events, userprofile WHERE eventcomment.eve_id = '".$eventid."'
+						AND events.eve_id = '".$eventid."' 
+						AND eventcomment.acc_id = userprofile.acc_id");
+while($comments = $db->get_row($comment)){
+	$thumb = str_replace("_n","_t",$comments['usp_photo']);
+	$photo = $CONFIG_image_host.$CONFIG_image_path_user.$thumb;
+	$name = $comments['usp_firstname'].' '.$comments['usp_lastname'];
+	$eventReview .= '{"id":"'.$comments['cmt_id'].'","comment":"'.$comments['eve_comment'].'","acc_id":"'.$comments['acc_id'].'",
+					"name":"'.$name.'","photo":"'.$photo.'","userlogged":"'.$_SESSION['loggeduser']['id'].'"},';
+}
+$eventReview = substr($eventReview,0,-1);
+
+//PendingFriends
+$pendingUser = $db->select("SELECT userprofile.usp_photo, userprofile.acc_id FROM userprofile, userevent WHERE userevent.id_eve = '".$eventid."'
+	    AND userevent.reply_event = 'invited' AND userevent.acc_id = userprofile.acc_id");
+while($pendingUsers = $db->get_row($pendingUser)){
+	$thumb = str_replace("_n","_t",$pendingUsers['usp_photo']);
+	$photo = $CONFIG_image_host.$CONFIG_image_path_user.$thumb;
+	$pendingFriends .= '{"photo":"'.$photo.'","userid":"'.$pendingUsers['acc_id'].'","userlogged":"'.$_SESSION['loggeduser']['id'].'"},';
+}
+$pendingFriends = substr($pendingFriends,0,-1);
+
+//EventOwner
+$userMaster = $db->select("SELECT userprofile.usp_photo,userprofile.acc_id, userevent.acc_id AS confirmedUser
+							FROM userprofile, events, userevent 
+							WHERE events.eve_id = '".$eventid."' 
+							AND userevent.acc_id = '".$_SESSION['loggeduser']['id']."'
+							AND userevent.reply_event = 'yes'
+							AND userprofile.acc_id = events.acc_id");
+$userMaster = $db->get_row($userMaster);
+
+$usermaster .= '{"userlogged":"'.$_SESSION['loggeduser']['id'].'","userid":"'.$userMaster['acc_id'].'","userConfirmed":"'.$userMaster['confirmedUser'].'"}';
+
+
+?>
+{
+"eventData": [<?php echo $eventData; ?>],
+"comments": [<?php echo $eventReview; ?>],
+"pending": [<?php echo $pendingFriends; ?>],
+"userowner": [<?php echo $usermaster; ?>]
+}

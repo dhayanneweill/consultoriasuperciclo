@@ -1,0 +1,44 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.recoverypass = {
+	init: function(){
+		document.getElementById('recoverypass').innerHTML = template.content002;
+    	
+		whatoodo.recoverypass.render();
+		whatoodo.recoverypass.bind();
+	},
+	bind: function(){
+	},
+	render: function(data){
+	    document.getElementById('content-right-top').style.display = "none";
+	    
+	    document.getElementById('recoverypass').innerHTML = template.recoveryPass.replace("{IMG}", whatoodo.recovery.photo)
+	    .replace("{NAME}", whatoodo.recovery.name).replace("{QUESTION}","Its you?");
+	    
+	    $('#ndescription').click(function (){
+	    	var params = {
+			url : service.getBaseUrl() + "recoveryCode.php",
+			global : false,
+			type : "POST",
+			data : {
+				email : whatoodo.recovery.email
+
+			},
+			dataType : "json",
+			async : false,
+			success : function(data) {
+				history.go(0);	
+			},
+			error : function(data) {
+				wtd.alert.showMessage("Data is incorrect");
+				lib.views.set('home', {}, whatoodo);
+			}
+			};
+			wtd.alert.showLoader();
+			$.ajax(params);
+	    });
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

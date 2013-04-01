@@ -1,0 +1,61 @@
+<?php
+header('Content-Type: text/json; charset=UTF-8');
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+$countries = "";
+$categories = "";
+$maincat = "";
+$cost = "";
+$paymethod = "";
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+$result = $db->select("SELECT * FROM country");
+while ($row = $db->get_row($result)){
+	$countries .='{"iso":"'.$row['iso'].'","countryname":"'.$row['printable_name'].'"},';
+}
+//$categories = '{"teste":"Test1"},{"teste2":"Teste2"}';
+$countries = substr($countries,0,-1);
+$result = $db->select("SELECT element.cat_id, element.cat_name, element.cat_acronym, element.cat_parent, category.cat_id AS parent_id
+FROM (SELECT * FROM category WHERE cat_parent <> '') AS element, category
+WHERE element.cat_parent = category.cat_name AND category.cat_parent = ''
+ORDER BY parent_id");
+while ($row = $db->get_row($result)){
+	$categories .='{"id":"'.$row['cat_id'].'","categoryname":"'.$row['cat_name'].'","catparent":"'.$row['parent_id'].'","acronym":"'.$row['cat_acronym'].'"},';
+}
+$categories = substr($categories,0,-1);
+$result = $db->select("SELECT * FROM category WHERE cat_parent = ''");
+while ($row = $db->get_row($result)){
+	$maincat .='{"id":"'.$row['cat_id'].'","categoryname":"'.$row['cat_name'].'"},';
+}
+$maincat = substr($maincat,0,-1);
+//busca cost
+$result = $db->select("SELECT * FROM cost");
+while ($row = $db->get_row($result)){
+	$cost .='{"id":"'.$row['cos_id'].'","cos_average":"'.$row['cos_average'].'"},';
+}
+$cost = substr($cost,0,-1);
+
+//busca paymethod
+$result = $db->select("SELECT * FROM paymethod");
+while ($row = $db->get_row($result)){
+	$paymethod .='{"id":"'.$row['pay_id'].'","pay_name":"'.$row['pay_name'].'"},';
+}
+$paymethod = substr($paymethod,0,-1);
+//$paymethod = '{"teste":"teste"}';
+	
+?>
+{
+"paymethod":[<?php echo $paymethod; ?>],
+"countries":[<?php echo $countries; ?>],
+"categories":[<?php echo $categories; ?>],
+"maincat":[<?php echo $maincat; ?>],
+"cost":[<?php echo $cost; ?>]
+}

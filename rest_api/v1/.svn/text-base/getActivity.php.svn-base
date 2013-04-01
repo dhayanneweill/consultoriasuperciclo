@@ -1,0 +1,44 @@
+<?php
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+$place = $_POST['pid'];
+$returnPlaces = Array();
+$returnTags = Array();
+$returnReviews = Array();
+
+$places = $db->select("SELECT * FROM place WHERE pla_id = '".$place."' AND pla_status = 'Active' ");
+$places = $db->get_row($places);
+
+
+array_push($returnPlaces, $places);
+
+$categorie = $db->select("SELECT placetags.plt_tag FROM place, placetags WHERE placetags.pla_id = '".$place."' AND
+											place.pla_id = placetags.pla_id");
+while($categories = $db->get_row($categorie)){
+		array_push($returnTags, $categories);
+}
+
+$review = $db->select("SELECT placereview.pla_id, placereview.rev_msg, placereview.rev_pla, userprofile.acc_id, placereview.rev_rating, placereview.rev_date,
+				userprofile.usp_firstname, userprofile.usp_lastname, userprofile.usp_photo
+				FROM placereview, userprofile WHERE placereview.pla_id = '".$place."' 
+				AND placereview.acc_id = userprofile.acc_id");
+while($reviews = $db->get_row($review)){
+	$reviews['usp_photo'] = urlimage($reviews['usp_photo'], "user");
+	$reviews['uid'] = $_SESSION['loggeduser']['id'];
+	array_push($returnReviews, $reviews);
+}
+	echo json_encode(Array("place" => $returnPlaces, "tags" => $returnTags, "reviews" => $returnReviews));
+?>

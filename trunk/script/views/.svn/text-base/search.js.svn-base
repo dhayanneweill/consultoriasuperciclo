@@ -1,0 +1,58 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.search = {
+	page : 0,
+	init : function(args) {
+		document.getElementById('search').innerHTML = template.content005search;
+
+		if(args.value != null)
+			value = args.value;
+		if(value == null)
+			value = GET["params"];
+
+		whatoodo.search.getSearch(value, whatoodo.search.page);
+		whatoodo.search.bind();
+	},
+	bind : function() {
+	},
+	getSearch : function(value, page) {
+		if (page == 0)
+			$('#search #box-list').html("");
+		$('#search #box-list-loader').html("<img src='style/img/3.gif' />");
+		service.search(value, page, function(data) {
+			whatoodo.search.render(data);
+		}, function() {
+			$('#search #box-list-loader').html("Error while performing the search.<br>Please try again alter.");
+		});
+
+	},
+	render : function(data) {
+		var listHome = "";
+		if (data.results.count == 0) {
+			$('#search #box-list-loader').html("No more results found.");
+			return;
+		}
+		for( x = 0; x < data.results.count; x++) {
+			var item = data.results.items[x];
+			listHome += template.componentSearch.replace("{IMG}", item.image).replace("{PID}", item.id).replace("{NAME}", item.name).replace("{FESTA}", item.description).replace("{ENDERECO}", item.contact.address).
+						replace("{RATING}", whatoodo.search.ratingToStars(item.rating));
+		}
+		$('#search #box-list').append(listHome);
+		$('#search #box-list-loader').html("");
+		$('.body-places-selected,.body-places-unselected').unbind('click').click(function() {
+			$(this).parent().children().removeClass('body-places-selected').addClass('body-places-unselected');
+			$(this).addClass('body-places-selected').removeClass('body-places-unselected');
+		});
+		$('#search #box-list>:first-child').addClass('body-places-selected').removeClass('body-places-unselected');
+		lib.events.onScroll(function () {
+			whatoodo.search.page++;
+			whatoodo.search.getSearch(value, whatoodo.search.page);
+		}); 
+	},
+	ratingToStars : function(rating) {
+		return "<img src='style/img/icons/icon_set_on_small.png' />".repeat(rating) + "<img src='style/img/icons/icon_set_off_small.png' />".repeat(5 - rating);
+	},
+	destroy : function() {
+	}
+};
+window.whatoodo = whatoodo;

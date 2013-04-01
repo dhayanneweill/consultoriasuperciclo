@@ -1,0 +1,22 @@
+<?php
+class User {
+	public static function getUser($id, $data) {
+		$db = Api::getDb();
+		
+		$result =  $db->select("SELECT *
+								FROM userprofile
+								WHERE acc_id = $id
+								LIMIT 1");
+		$row = $db->get_row($result);
+		return User::base($row, $data);
+	}
+	public static function base($row, $data) {
+		$user = Array();
+		$user['id'] = $row['acc_id'];
+		$user['firstname'] = $row['usp_firstname'];
+		$user['lastname'] = $row['usp_lastname'];
+		$user['image'] = urlimage($row['usp_photo'], "users");
+		return $user;
+	}
+}
+?>

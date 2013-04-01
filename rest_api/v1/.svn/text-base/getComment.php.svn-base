@@ -1,0 +1,35 @@
+<?php
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+$eventid = $_POST['eventid'];
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+//Comments
+$comment = $db->select("SELECT eventcomment.cmt_id, eventcomment.eve_comment, eventcomment.acc_id, userprofile.usp_firstname, userprofile.usp_lastname, userprofile.usp_photo 
+						FROM eventcomment, events, userprofile WHERE eventcomment.eve_id = '".$eventid."'
+						AND events.eve_id = '".$eventid."' 
+						AND eventcomment.acc_id = userprofile.acc_id");
+while($comments = $db->get_row($comment)){
+	$thumb = str_replace("_n","_t",$comments['usp_photo']);
+	$photo = $CONFIG_image_host.$CONFIG_image_path_user.$thumb;
+	$name = $comments['usp_firstname'].' '.$comments['usp_lastname'];
+	$eventReview .= '{"id":"'.$comments['cmt_id'].'","comment":"'.$comments['eve_comment'].'","acc_id":"'.$comments['acc_id'].'",
+					"name":"'.$name.'","photo":"'.$photo.'","userlogged":"'.$_SESSION['loggeduser']['id'].'"},';
+}
+$eventReview = substr($eventReview,0,-1);
+?>
+{
+"comments": [<?php echo $eventReview; ?>]
+}

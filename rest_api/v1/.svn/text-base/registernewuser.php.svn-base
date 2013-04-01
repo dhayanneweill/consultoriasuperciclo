@@ -1,0 +1,91 @@
+<?php
+//Raw protection
+
+require_once 'class.phpmailer.php';
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+  //Beggining on the validations
+  $data = $_POST['data'];
+  if ($data["type"] == 1) {
+    $result = $db->select_one("SELECT acc_username FROM useraccount WHERE acc_username LIKE '".$data["username"]."' ");
+    if ($result != "") {
+      die("ALREADYEXISTS");
+    } else {
+      die("OK");
+    }
+  }
+  else {
+    $username = $data["username"];
+    $password = $data["password"];
+    $email = $data["email"];
+    $country = $data["country"];
+    if (!$username || !$password || !$email || !$country) {
+      die("EMPTYFIELDS");
+    }
+    $db->begin();
+    //Valida username novamente
+    $result = $db->select_one("SELECT acc_username FROM useraccount WHERE acc_username LIKE '".$data["username"]."' ");
+    if ($result != "") {
+      die("ERROR");
+    } elseif (!check_email_address($email)) {
+      die("ERROR");
+    }
+    $result = $db->select_one("SELECT printable_name FROM country WHERE iso = '".$country."'");
+    if ($result == "" || !$result) {
+      die("ERROR");
+    }
+    if ($db->select_one("SELECT acc_email FROM useraccount WHERE acc_email = '$email'")) {
+      die("ERROR");
+    }
+    $key = createRandomKey(20);
+    while ($db->select_one("SELECT acc_key FROM useraccount WHERE acc_key = ".$key)) {
+        $key = createRandomKey(20);  
+    }
+    
+    $result1 = $db->insert_sql("INSERT INTO `useraccount` (`acc_username` ,`acc_password` ,`acc_email`, `acc_verificationkey`, `acc_status`)VALUES ('".$username."', '".$password."', '".$email."', '".$key."','Unverified');");
+	$acc_id = $result1;
+    $result2 = $db->insert_sql("INSERT INTO `userprofile` (`acc_id`, `usp_firstname` , `usp_country`)VALUES ('".$result1."', '".$username."', '".$country."');");
+	
+    
+    //Send Email
+    //inicio para enviar email
+  	 //$mail = new PHPMailer();
+//   
+  	 //$mail->IsSMTP();
+  	 //$mail->SMTPSecure = "tls"; // set mailer to use SMTP
+  	 //$mail->Host = MailHost();  // specify main and backup server
+  	 //$mail->SMTPAuth = true; // turn on SMTP authentication
+  	 //$mail->Username = MailUser();  // SMTP username
+  	 //$mail->Password = MailPasswd(); // SMTP password
+//   
+  	 //$mail->From = "whatoodo@whatoodo.com";
+  	 //$mail->FromName = "Validation key";
+  	 //$mail->AddAddress($email);
+//   
+  	 //$mail->Subject = "Whatoodo validation key";
+  	 //$mail->Body    = "Hi ".$username."\n\nTo active your account click in this link: http://www.whatoodo.com/verify.php?key=".$key;
+//   
+  	 //if(!$mail->Send()) {
+     //		 echo "Message could not be sent. <p>";
+     //		 echo "Mailer Error: " . $mail->ErrorInfo;
+     //		 exit;
+  	 //}	
+    
+    if ($result1 && $result2) {
+      $db->commit();
+      //if (isset($_SESSION['registermail'])) {
+      //    unset($_SESSION['registermail']);
+      //}
+      die("OK");
+    } else {
+      $db->rollback();
+      die("ERROR");
+    }
+  }
+?>

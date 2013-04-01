@@ -1,0 +1,352 @@
+<?php
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+//session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+$valores = "";
+$result = $db->select('SELECT DISTINCT hotplaces.usp_photo, hotplaces.usp_firstname, hotplaces.usp_lastname,
+	hotplaces.localname, hotplaces.new_type, hotplaces.new_message, hotplaces.reply, hotplaces.date,
+	hotplaces.owner, hotplaces.userid, hotplaces.new_id, hotplaces.eventgo
+	FROM ((SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname, place.pla_name AS localname,
+		news.new_type, news.new_message, news.new_inReplyTo AS reply, DATE_FORMAT(news.new_date, "%d/%m/%Y") as date, 
+		place.acc_id AS owner, userprofile.acc_id AS userid, news.new_id, place.pla_cost AS eventgo
+		FROM userprofile, userfriends, news, place WHERE news.acc_id = userfriends.usf_id 
+		AND news.new_inReplyTo = place.pla_id  
+		AND userfriends.usf_id = userprofile.acc_id ) 
+				UNION
+		(SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname, events.eve_name AS localname,
+		news.new_type, news.new_message, news.new_mention AS reply, DATE_FORMAT(news.new_date, "%d/%m/%Y") as date, 
+		events.acc_id AS owner, userprofile.acc_id AS userid, news.new_id, events.eve_id AS eventgo FROM userprofile, userevent, events, userfriends, news 
+		WHERE userevent.reply_event = "yes"
+		AND userfriends.usf_id = userevent.acc_id 
+		AND userevent.acc_id = userprofile.acc_id 
+		AND events.eve_id = userevent.id_eve 
+		AND news.acc_id = userfriends.usf_id 
+		AND news.new_mention = events.eve_id )) AS hotplaces CROSS JOIN userprofile AS userloged 
+		ORDER BY hotplaces.date DESC LIMIT 1000');
+while($row = $db->get_row($result)){
+	$row['usp_photo'] = urlimage($row['usp_photo'], "user");
+	$userphoto = $row['usp_photo'];
+	$name = $row['usp_firstname'].' '.$row['usp_lastname'];
+	$valores .= '{"userphoto":"'.$userphoto.'","username":"'.$name.'","local":"'.$row['localname'].'","type":"'.$row['new_type'].'",
+"message":"'.$row['new_message'].'","place_reply":"'.$row['reply'].'","date":"'.$row['date'].'","owner_place":"'.$row['owner'].'",
+"userid":"'.$row['userid'].'", "new_id":"'.$row['new_id'].'"},';
+	
+}
+//	 $valores = substr($valores,0,-2);
+//         $valores .= '}' ;
+
+?>
+
+<?php 
+
+//Geolocation Processing
+if (!isset($_SESSION['ipdata'])) {
+	$ip = $_SERVER['REMOTE_ADDR'];
+	if ($ip == '127.0.0.1' || $ip == '::1' || substr($ip, 0, 7) == "192.168") {
+		$ip = '201.75.100.140';
+	}
+	$response = file_get_contents('http://api.ipinfodb.com/v2/ip_query.php?key=e456930218ef16c3210ed505e5d4164caebff99f15a4ddce7ae33c7457ab074c&output=json&timezone=false&ip='.$ip);
+	$_SESSION['ipdata'] = json_decode($response, true);
+	if ($_SESSION['ipdata']['Status'] != "OK") {
+		$_SESSION['ipdata'] = json_decode('{ "Status" : "OK", "CountryCode" : "BR", "CountryName" : "Brazil", "RegionCode" : "4", "RegionName" : "Amazonas", "City" : "Manaus", "ZipPostalCode" : "", "Latitude" : "-10", "Longitude" : "-55", "Timezone" : "0", "Gmtoffset" : "0", "Dstoffset" : "0", "TimezoneName" : "", "Isdst" : "", "Ip" : "200.160.99.67" }', true);
+	} if (!isset($_SESSION['ipdata']['City']) || $_SESSION['ipdata']['City'] == "") {
+	  $_SESSION['ipdata']['City'] = "São Paulo";
+	  $_SESSION['ipdata']['RegionName'] = "São Paulo";
+	}
+}
+
+$timeline = "";
+$week_days = Array();
+$week_days[0] = "Sunday";
+$week_days[1] = "Monday";
+$week_days[2] = "Tuesday";
+$week_days[3] = "Wednesday";
+$week_days[4] = "Thursday";
+$week_days[5] = "Friday";
+$week_days[6] = "Saturday";
+
+for($i = 0; $i < 7; $i++){
+   $placeList =  $db->select("SELECT DISTINCT id, name, image, pla_city, pla_country, bus_day_work, rev_average, cos_average,
+                     (CASE placeinfo.pla_city
+                     WHEN '".$_SESSION['ipdata']['City']."' THEN 1000
+                     ELSE 0
+                     END)+
+                     (CASE bus_promoday
+                     WHEN 1 THEN 100
+                     ELSE 0
+                     END)+                    
+                     (CASE rev_average
+                     WHEN 1 THEN 50
+                     WHEN 2 THEN 100
+                     WHEN 3 THEN 200
+                     WHEN 4 THEN 400
+                     WHEN 5 THEN 800
+                     ELSE 0
+                     END) AS relevance
+ FROM (SELECT DISTINCT cos_average, bus_day_work, bus_day AS bus_day_promo, id, name, image, pla_city, pla_country, bus_promoday, ROUND(IFNULL(AVG(rev_rating),0)) AS rev_average
+      FROM (SELECT DISTINCT pla_cost,bus_day AS bus_day_work, place.pla_id AS id, place.pla_name AS name, place.pla_photo AS image, place.pla_city, place.pla_country
+           FROM place,placetags, businesstime
+           WHERE place.pla_city = '".$_SESSION['ipdata']['City']."'
+           AND businesstime.pla_id = place.pla_id
+           AND businesstime.bus_day = '".$week_days[$i]."') as placeinfo
+      LEFT JOIN businesstime ON businesstime.pla_id = id AND businesstime.bus_day = '".date("l")."'
+      LEFT JOIN cost ON pla_cost = cost.cos_id
+      LEFT JOIN placereview ON placereview.pla_id = id
+      GROUP BY id)placeinfo    
+ ORDER BY relevance DESC
+ LIMIT 4");
+   for($j = 0; $j < 4; $j++) {
+     $place = $db->get_row($placeList);
+     if ($place) {
+       if ($place['image']) {
+         $place['image'] = urlimage($place['image'], "places");  
+       } else {
+       $place['image'] = "images/camera-icon.png";
+       }
+     }
+	//$placename = $place['name'];
+	$timeline .= '{"id":"'.$place['id'].'","placename":"'.$place['name'].'","placeimage":"'.$place['image'].'","placecity":"'.$place['pla_city'].'", "placecountry":"'.$place['pla_country'].'","workday":"'.$place['bus_day_work'].'","average":"'.$place['rev_average'].'", "cosaverage":"'.$place['cos_average'].'","relevance":"'.$place['relevance'].'"},';
+
+   }
+	// $timeline = substr($timeline,0,-1);
+         //$timeline .= ']' ;
+
+	  //this query count how many places works in the specified weekday  
+	  $placeCounter =  $db->select("SELECT DISTINCT COUNT(*) AS pla_counter
+                	FROM place, businesstime
+ 	                WHERE place.pla_city = '".$_SESSION['ipdata']['City']."'
+                	AND businesstime.pla_id = place.pla_id
+                	AND businesstime.bus_day = '".$week_days[$i]."'");
+	  $counter = $db->get_row($placeCounter);
+}
+?>
+<?php //Get logged user's friends's info
+$friendsInfo = "";
+$friends = $db->select("SELECT usf_id, usp_firstname, usp_lastname, usp_photo
+					   FROM userfriends,userprofile 
+					   WHERE userfriends.usf_status = 'Accepted' 
+					   AND userfriends.acc_id = '12'
+					   AND userfriends.usf_id = userprofile.acc_id");
+while ($friend = $db->get_row($friends)){
+	$friendName = $friend['usp_firstname'].' '.$friend['usp_lastname'];
+	$friendsInfo .= '{"friendname":"'.$friendName.'","friendid":"'.$friend['usf_id'].'","friendphoto":"'.$friend['usp_photo'].'"},';
+}
+					    
+?>
+<?php 
+/*$week_days = Array();
+$week_days[0] = "Sunday";
+$week_days[1] = "Monday";
+$week_days[2] = "Tuesday";
+$week_days[3] = "Wednesday";
+$week_days[4] = "Thursday";
+$week_days[5] = "Friday";
+$week_days[6] = "Saturday";
+
+//Geolocation Processing
+if (!isset($_SESSION['ipdata'])) {
+        $ip = $_SERVER['REMOTE_ADDR'];
+        if ($ip == '127.0.0.1' || $ip == '::1' || substr($ip, 0, 7) == "192.168") {
+                $ip = '201.75.100.140';
+        }
+        $response = file_get_contents('http://api.ipinfodb.com/v2/ip_query.php?key=e456930218ef16c3210ed505e5d4164caebff99f15a4ddce7ae33c7457ab074c&output=json&timezone=false&ip='.$ip);
+        $_SESSION['ipdata'] = json_decode($response, true);
+        if ($_SESSION['ipdata']['Status'] != "OK") {
+                $_SESSION['ipdata'] = json_decode('{ "Status" : "OK", "CountryCode" : "BR", "CountryName" : "Brazil", "RegionCode" : "4", "RegionName" : "Amazonas", "City" : "Manaus", "ZipPostalCode" : "", "Latitude" : "-10", "Longitude" : "-55", "Timezone" : "0", "Gmtoffset" : "0", "Dstoffset" : "0", "TimezoneName" : "", "Isdst" : "", "Ip" : "200.160.99.67" }', true);
+        } if (!isset($_SESSION['ipdata']['City']) || $_SESSION['ipdata']['City'] == "") {
+          $_SESSION['ipdata']['City'] = "São Paulo";
+          $_SESSION['ipdata']['RegionName'] = "São Paulo";
+        }
+}
+
+
+
+for($i = 0; $i < 7; $i++){
+        $plc =  $db->select("SELECT DISTINCT id, name, image, pla_city, pla_country, bus_day_work, rev_average,
+               (CASE confirmed
+                    WHEN  0 THEN 0                    
+                    WHEN  1 THEN 50                    
+                    WHEN  2 THEN 100                    
+                    WHEN  3 THEN 150                    
+                    WHEN  4 THEN 200
+                    ELSE 200
+                    END)+
+                    (CASE my_event
+                    WHEN '0' THEN 0
+                    ELSE 5000
+                    END)+
+                    (CASE placeinfo.pla_city
+                    WHEN 'Manaus' THEN 1000
+                    ELSE 0
+                    END)+
+                    (CASE bus_promoday
+                    WHEN 1 THEN 100
+                    ELSE 0
+                    END)+                    
+                    (CASE pre_rating_average
+                    WHEN 1 THEN 50
+                    WHEN 2 THEN 100
+                    WHEN 3 THEN 200
+                    WHEN 4 THEN 400
+                    WHEN 5 THEN 800
+ ELSE 0
+                    END)+
+                    (CASE rev_average
+                    WHEN 1 THEN 50
+                    WHEN 2 THEN 100
+                    WHEN 3 THEN 200
+                    WHEN 4 THEN 400
+                    WHEN 5 THEN 800
+                    ELSE 0
+                    END)+
+                    (CASE my_review
+                    WHEN 1 THEN 25
+                    WHEN 2 THEN 50
+                    WHEN 3 THEN 100
+                    WHEN 4 THEN 200
+                    WHEN 5 THEN 400
+                    ELSE 0
+                    END) AS relevance
+  FROM (SELECT DISTINCT bus_day_work, placereview.rev_rating AS my_review, pre_rating, placeinfo.cat_id AS place_cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, my_event, pre_rating_average, rev_average, COUNT(reply_event) AS confirmed
+     FROM (SELECT DISTINCT bus_day_work, bus_day AS bus_day_promo, IFNULL(pre_rating, 0) AS pre_rating, placeinfo.cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, eve_id, IFNULL(eve_name,0) AS my_event, ROUND(IFNULL(AVG(pre_rating),0)) AS pre_rating_average, ROUND(IFNULL(AVG(rev_rating),0)) AS rev_average
+          FROM (SELECT DISTINCT bus_day AS bus_day_work, cat_id, cat_name, place.pla_id AS id, place.pla_name AS name, place.pla_photo AS image, place.pla_city, place.pla_country
+               FROM place,placetags, category, businesstime
+               WHERE place.pla_id = placetags.pla_id
+               AND place.pla_city = 'Manaus'
+               AND category.cat_name = placetags.plt_tag
+               AND businesstime.pla_id = place.pla_id
+               AND businesstime.bus_day = 'Sunday') as placeinfo
+          LEFT JOIN userpreferences ON userpreferences.cat_id = placeinfo.cat_id AND userpreferences.acc_id = '05'
+          LEFT JOIN businesstime ON businesstime.pla_id = id AND businesstime.bus_day = '".date("l")."'
+          LEFT JOIN events ON events.pla_id = id AND events.acc_id = '05'
+          LEFT JOIN placereview ON placereview.pla_id = id
+          GROUP BY id)placeinfo
+        LEFT JOIN userevent ON userevent.id_eve = eve_id AND userevent.reply_event = 'Yes'     
+        LEFT JOIN placereview ON placereview.pla_id = id AND placereview.acc_id = '05'
+LEFT JOIN placereview ON placereview.pla_id = id
+          GROUP BY id)placeinfo
+        LEFT JOIN userevent ON userevent.id_eve = eve_id AND userevent.reply_event = 'Yes'     
+        LEFT JOIN placereview ON placereview.pla_id = id AND placereview.acc_id = '05'
+        GROUP BY id) placeinfo     
+    ORDER BY relevance DESC
+    LIMIT 4");
+
+        for($j = 0; $j < 4; $j++) {
+             $plclst = $db->get_row($plc);
+             if ($plclst) {
+               if ($plclst['image']) {
+                        $plclst['image'] = urlimage($plclst['image'], "places");
+               } else {
+                        $plclst['image'] = "images/camera-icon.png";
+                }
+             }
+        //$placename = $place['name'];
+        $loggedtimeline .= '{"id":"'.$plclst['id'].'","placename":"'.$plclst['name'].'","placeimage":"'.$plclst['image'].'","placecity":"'.$plclst['pla_city'].',"placecountry":"'.$plclst['pla_country'].'","workday":"'.$plclst['bus_day_work'].'","average":"'.$plclst['rev_average'].'","relevance":"'.$plclst['relevance'].'"},';
+
+        }
+}
+
+*/
+?>
+<?php
+$result = $db->select("SELECT userloged.acc_id as userowner, hotplaces.usp_photo, hotplaces.usp_firstname, hotplaces.usp_lastname,
+	hotplaces.localname, hotplaces.new_type, hotplaces.new_message, hotplaces.reply, hotplaces.date,
+	hotplaces.owner, hotplaces.userid, hotplaces.new_id, hotplaces.eventgo
+	FROM ((SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname, 
+		place.pla_name AS localname, news.new_type, news.new_message, news.new_inReplyTo AS reply,
+		DATE_FORMAT(news.new_date, '%d/%m/%Y') as date, place.acc_id AS owner, 
+		userprofile.acc_id AS userid, news.new_id, place.pla_cost AS eventgo
+		FROM userprofile, userfriends, news, place WHERE news.acc_id = userfriends.usf_id 
+		AND news.new_inReplyTo = place.pla_id  
+		AND userfriends.usf_id = userprofile.acc_id ) 
+				UNION
+		(SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname,
+		 events.eve_name AS localname, news.new_type, news.new_message, news.new_mention AS reply,
+		 DATE_FORMAT(news.new_date, '%d/%m/%Y') as date, events.acc_id AS owner, 
+		 userprofile.acc_id AS userid, news.new_id, events.eve_id AS eventgo FROM userprofile,
+	 	 userevent, events, userfriends, news 
+		 WHERE userevent.reply_event = 'yes'
+		 AND userfriends.usf_id = userevent.acc_id 
+		 AND userevent.acc_id = userprofile.acc_id 
+		 AND events.eve_id = userevent.id_eve 
+		 AND news.acc_id = userfriends.usf_id 
+		 AND news.new_mention = events.eve_id )) AS hotplaces CROSS JOIN userprofile AS userloged 
+		 WHERE userloged.acc_id = '05' ORDER BY date DESC LIMIT 0,10");
+
+while ($row = $db->get_row($result)) {
+	$row['usp_photo'] = urlimage($row['usp_photo'], "user");
+	$row['userowner'] = trim($row['userowner'],0);
+	$username = $row['usp_firstname'].' '.$row['usp_lastname'];
+	$feed .= '{"userowner":"'.$row['userowner'].'","userphoto":"'.$row['usp_photo'].'","username":"'.$username.'","userlocal":"'.$row['localname'].'",
+"type":"'.$row['new_type'].'","usermessage":"'.$row['new_message'].'","reply":"'.$row['reply'].'","date":"'.$row['date'].'", "owner":"'.$row['owner'].'","userid":"'.$row['userid'].'","new_id":"'.$row['new_id'].'","eventgo":"'.$row['eventgo'].'"},';
+
+}
+
+?>
+<?php
+$result = $db->select("SELECT DISTINCT hotplaces.usp_photo, hotplaces.usp_firstname, hotplaces.usp_lastname,
+	hotplaces.localname, hotplaces.new_type, hotplaces.new_message, hotplaces.reply, hotplaces.date,
+	hotplaces.owner, hotplaces.userid, hotplaces.new_id, hotplaces.eventgo
+	FROM ((SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname, place.pla_name AS localname,
+		news.new_type, news.new_message, news.new_inReplyTo AS reply, DATE_FORMAT(news.new_date, '%d/%m/%Y') as date, 
+		place.acc_id AS owner, userprofile.acc_id AS userid, news.new_id, place.pla_cost AS eventgo
+		FROM userprofile, userfriends, news, place WHERE news.acc_id = userfriends.usf_id 
+		AND news.new_inReplyTo = place.pla_id  
+		AND userfriends.usf_id = userprofile.acc_id 
+		AND userprofile.acc_id = '05') 
+				UNION
+		(SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname, events.eve_name AS localname,
+		news.new_type, news.new_message, news.new_mention AS reply, DATE_FORMAT(news.new_date, '%d/%m/%Y') as date, 
+		events.acc_id AS owner, userprofile.acc_id AS userid, news.new_id, events.eve_id AS eventgo FROM userprofile, userevent, events, userfriends, news 
+		WHERE userevent.reply_event = 'yes'
+		AND userfriends.usf_id = userevent.acc_id 
+		AND userevent.acc_id = userprofile.acc_id 
+		AND events.eve_id = userevent.id_eve 
+		AND news.acc_id = userfriends.usf_id 
+		AND news.new_mention = events.eve_id )) AS hotplaces CROSS JOIN userprofile AS userloged 
+		ORDER BY hotplaces.date DESC");
+while ($row = $db->get_row($result)) {
+	$row['usp_photo'] = urlimage($row['usp_photo'], "user");
+	$row['userowner'] = trim($row['userowner'],0);
+	$username = $row['usp_firstname'].' '.$row['usp_lastname'];
+	$userfeed .= '{"userowner":"'.$row['userowner'].'","userphoto":"'.$row['usp_photo'].'","username":"'.$username.'",
+"userlocal":"'.$row['localname'].'","type":"'.$row['new_type'].'","usermessage":"'.$row['new_message'].'","reply":"'.$row['reply'].'",
+"date":"'.$row['date'].'","owner":"'.$row['owner'].'","userid":"'.$row['userid'].'","new_id":"'.$row['new_id'].'","eventgo":"'.$row['eventgo'].'"},';
+}
+?>
+<?php
+$search = $db->select("SELECT DISTINCT *
+               FROM place,placetags,  category, businesstime
+               WHERE place.pla_id = placetags.pla_id
+               AND place.pla_city = 'Manaus'
+               AND businesstime.bus_start > '2011-08-01'
+               AND category.cat_name = placetags.plt_tag
+	           AND businesstime.pla_id = place.pla_id");
+while($searchs = $db->get_row($search)){
+	$sch .= '{"pla_id":"'.$searchs['pla_id'].'","pla_name":"'.$searchs['pla_name'].'","pla_rating":"'.$searchs['pla_rating'].'",
+"pla_photo":"'.$searchs['pla_photo'].'","telephone":"'.$searchs['pla_telephone1'].'","pla_address":"'.$searchs['pla_address'].'",
+"pla_city":"'.$searchs['pla_city'].'","pla_state":"'.$searchs['pla_state'].'", "pla_website":"'.$searchs['pla_website'].'"},';
+
+}
+
+?>
+{
+"activity":[<?php echo $valores; ?>],
+"timeline": [<?php echo $timeline; ?>],
+"friends":[<?php echo $friendsInfo; ?>],
+"feed":[<?php echo $feed;?>],
+"userfeed":[<?php echo $userfeed;?>],
+"search":[<?php echo $sch;?>]
+}
+

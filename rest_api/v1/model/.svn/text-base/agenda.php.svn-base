@@ -1,0 +1,70 @@
+<?php
+class Agenda {
+	public static function search($data) {
+		$db = API::getDb();
+		
+		// Parameter Validation
+		if (!isset($data['q']))
+		   API::error(400, "Missing query search");
+		$q = mysql_escape_string($data['q']);
+		if (!isset($q) || $q == "")
+			API::response(Array());
+		return Agenda::process($data);
+	}
+	public static function getAgendas($data) {
+		$db = API::getDb();
+		
+		// TODO Validate from field (invalid dates)
+		if (!isset($data['coordinates']) || $data['coordinates'] == "")
+			API::error(400, "Missing coordinates");
+		
+		return Agenda::process($data);
+	}
+	public static function process($data) {
+		$db = API::getDb();
+		
+		// Request data setup 
+		if (isset($data['coordinates'])) {
+			$coordinates = explode(",", $data['coordinates']);
+			if (!isset($coordinates[0]) || !is_numeric($coordinates[0]))
+				API::error(400, "Invalid latitude");
+			if (!isset($coordinates[1]) || !is_numeric($coordinates[1]))
+				API::error(400, "Invalid longitude");
+			$latitude = $coordinates[0];
+			$longitude = $coordinates[1];
+		}
+		
+		$from = $data['from'];
+		
+		if (isset($data['size']))
+			$size = $data['size'];
+		else
+			$size = 10;
+		
+		if (isset($data['expand']))
+			$expands = explode(",", $data['expand']);
+		else
+			$expands = Array();
+		
+		if (isset($data['globalSearch']))
+			$showType = $data['globalSearch'];
+		else
+			$showType = false;
+		
+		// Object build and return
+		$return = Array();
+		for ($i = 0; $i < $size; $i++) {
+			$data['from'] += ($i * 86400);
+			$events = Event::getEvents($data);
+			$agenda = Array();
+			if ($showType == true)
+				$agenda['type'] = 'agenda';
+			$agenda['from'] = $data['from'];
+			$agenda['count'] = sizeof($events);
+			$agenda['agenda'] = $events;
+			array_push($return, $agenda);
+		}
+		return $return;
+	}
+}
+?>

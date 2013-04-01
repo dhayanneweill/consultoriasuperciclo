@@ -1,0 +1,234 @@
+<?php
+class Place {
+	public static function search($data) {
+		$db = API::getDb();
+		
+		// Parameter Validation
+		if (!isset($data['q']))
+		   API::error(400, "Missing query search");
+		$q = mysql_escape_string($data['q']);
+		if (!isset($q) || $q == "")
+			API::response(Array());
+		return Place::process($data);
+	}
+	public static function getPlacesNearBy($data) {
+		$db = API::getDb();
+		
+		// Parameter Validation
+		if (!isset($data['coordinates']) || $data['coordinates'] == "")
+			API::error(400, "Missing coordinates");
+		
+		return Place::process($data);
+	}
+	public static function getPlace($id, $data) {
+		if (!isset($_SESSION['places'])) {
+			$db = API::getDb();
+			
+			$result =  $db->select("SELECT place.*,
+				                    (CASE pla_rating
+				                     WHEN 1 THEN 20
+				                     WHEN 2 THEN 40
+				                     WHEN 3 THEN 60
+				                     WHEN 4 THEN 80
+				                     WHEN 5 THEN 100
+				                     ELSE 0
+				                     END) AS relevance
+									FROM place");
+								
+			while($row = $db->get_row($result)) 
+				$_SESSION['places'][$row['pla_id']] = $row;
+		}
+		$row = $_SESSION['places'][$id];
+		if (!isset($row) || $row == null)
+			return Array();
+		$row = Place::preprocess($row, $data);
+		return Place::base($row, $data);
+	}
+	public static function process($data) {
+		$db = API::getDb();
+		// Selection of all places
+		$result =  $db->select("SELECT place.*,
+			                    (CASE pla_rating
+			                     WHEN 1 THEN 20
+			                     WHEN 2 THEN 40
+			                     WHEN 3 THEN 60
+			                     WHEN 4 THEN 80
+			                     WHEN 5 THEN 100
+			                     ELSE 0
+			                     END) AS relevance
+								FROM place");
+		
+		// Request data setup 
+		if (isset($data['offset']))
+			$offset = $data['offset'];
+		else
+			$offset = 0;
+		
+		if (isset($data['size']))
+			$size = $data['size'];
+		else
+			$size = 10;
+		
+		if (isset($data['expand']))
+			$expands = explode(",", $data['expand']);
+		else
+			$expands = Array();
+		
+		if (isset($data['sort']))
+			$sort = $data['sort'];
+		else
+			$sort = null;
+		
+		if (isset($data['globalSearch']))
+			$showType = $data['globalSearch'];
+		else
+			$showType = false;
+		
+		// Process some variables that cannot be processes with SQL (Like distance and Relevance)
+		$list = Array();
+		$slist = Array();
+		$slist['name'] = Array();
+		$slist['relevance'] = Array();
+		$slist['distance'] = Array();
+		while($row = $db->get_row($result)) {
+			$row = Place::preprocess($row, $data);
+			
+			/* List and sorting filters setup */
+			array_push($list, $row);
+			array_push($slist['name'], $row['pla_name']);
+			array_push($slist['relevance'], $row['relevance']);
+			array_push($slist['distance'], $row['distance']);
+		}
+		
+		// Sorting
+		switch ($sort) {
+			case 'name':
+				if (!array_multisort($slist['name'], SORT_DESC, $list))
+					API::Error(500, "Failed to sort list");
+				break;
+				
+			case 'nearby':
+				if (!array_multisort($slist['distance'], SORT_DESC, $list))
+					API::Error(500, "Failed to sort list");
+				break;
+			
+			default:
+				if (!array_multisort($slist['relevance'], SORT_DESC, $list))
+					API::Error(500, "Failed to sort list");
+				break;
+		}
+		
+		// Object build and return
+		$return = Array();
+		for ($i = $offset; $i < ($offset + $size) && $i < sizeof($list); $i++)
+			array_push($return, Place::base($list[$i], $data));
+		return $return;
+	}
+	public static function preprocess($row, $data) {
+		if (isset($data['q']))
+			$q = mysql_escape_string($data['q']);
+		if (isset($data['coordinates'])) {
+			$coordinates = explode(",", $data['coordinates']);
+			if (!isset($coordinates[0]) || !is_numeric($coordinates[0]))
+				API::error(400, "Invalid latitude");
+			if (!isset($coordinates[1]) || !is_numeric($coordinates[1]))
+				API::error(400, "Invalid longitude");
+			$latitude = $coordinates[0];
+			$longitude = $coordinates[1];
+		}
+		
+		
+		/* Relevance calculation */
+		/* Central Question - Name, Description or Tags */ 
+		if (isset($q)) {
+			if (is_numeric(strripos($row['pla_name'],$q)))
+				$row['relevance'] += 1000;
+			else if (is_numeric(strripos($row['pla_description'],$q)))
+				$row['relevance'] += 900;
+			else if (Place::isTag($q, $row['pla_id']))				
+				$row['relevance'] += 1000;
+		}
+			
+		/* Distance */
+		if (isset($latitude) && isset($longitude))
+			$row['distance'] = distance($row['pla_latitude'], $row['pla_longitude'], $latitude, $longitude);
+		else
+			$row['distance'] = 999;
+		
+		// TODO Verificar valores (Documento de 1 a 10, mas não válido)
+		if (isset($row['distance'])) {
+			if ($row['distance'] < 10)
+				$row['relevance'] += 400;
+			else if ($row['distance'] < 30)
+				$row['relevance'] += 300;
+			else if ($row['distance'] < 50)
+				$row['relevance'] += 200;
+		}
+			
+		// TODO Adicionar preferências do usuário à relevância
+		
+		// TODO Adicionar tipo de ambiente (não cadastrado ainda)
+		
+		// TODO Adicionar informações de Deslocamento
+		
+		return $row;
+	}
+	public static function base($row, $data) {
+		if (isset($data['coordinates'])) {
+			$coordinates = explode(",", $data['coordinates']);
+			if (!isset($coordinates[0]) || !is_numeric($coordinates[0]))
+				API::error(400, "Invalid latitude");
+			if (!isset($coordinates[1]) || !is_numeric($coordinates[1]))
+				API::error(400, "Invalid longitude");
+			$latitude = $coordinates[0];
+			$longitude = $coordinates[1];
+		}
+		if (isset($data['expand']))
+			$expands = explode(",", $data['expand']);
+		else
+			$expands = Array();
+		
+		$place = Array();
+		
+		if (isset($data['globalSearch']) && $data['globalSearch'] == true)
+			$place['type'] = 'place';
+		$place['id'] = $row['pla_id'];
+		$place['name'] = $row['pla_name'];
+		$place['description'] = $row['pla_description'];
+		$place['image'] = urlimage($row['pla_photo'], "places");
+		if (isset($row['distance']))
+			$place['distance'] = round($row['distance'], 5);
+		$place['rating'] = intval($row['pla_rating']);
+		$place['contact']['address'] = $row['pla_address'];
+		$place['contact']['website'] = $row['pla_website'];
+		$place['contact']['email'] = $row['pla_email'];
+		$place['contact']['telephone1'] = $row['pla_telephone1'];
+		$place['contact']['telephone2'] = $row['pla_telephone2'];
+		$place['contact']['twitter'] = API::getConfig('twitter_base') . $row['pla_twitter'];
+		$place['city'] = $row['pla_city'];
+		$place['region'] = $row['pla_state'];
+		$place['country'] = $row['pla_country'];
+		$place['relevance'] = $row['relevance'];
+		if (isset($expands) && in_array("owner", $expands))
+			$place['owner'] = User::getUser($row['acc_id'], $data);
+		else
+			$place['owner'] = $row['acc_id'];
+		$place['cost'] = Finantial::getCost($row['pla_cost']);
+		$place['payMethod'] = Finantial::getPayMethods($row['pla_cost']);
+		
+		return $place;
+	}
+	public static function isTag($q, $id) {
+		$db = API::getDb();
+		// Selection of all places
+		$result = $db->select_one("SELECT plt_tag
+								FROM placetags
+								WHERE pla_id = $id
+								AND plt_tag = '$q'");
+		if ($result)
+			return true;
+		else
+			return false;
+	}
+}
+?>

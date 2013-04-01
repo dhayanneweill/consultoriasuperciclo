@@ -1,0 +1,43 @@
+<?php
+include_once 'config.php';
+include_once 'query.php';
+
+session_start();
+//Raw protection
+if (!$_SESSION['loggeduser']['id']) {
+  die("<script>window.location='../?'</script>");
+}  
+//Beggining on the validations
+  $data = $POST_data;
+  $loggeduser = $_SESSION['loggeduser']['id'];
+    $preferences = $data["preferences"];
+	$db = new db_class();
+	if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+		$db->print_last_error();
+	}
+	if (!$db->select_db()){
+		die("Banco de dados não encontrado!");
+	}
+    $db->begin();
+    //Valida username novamente
+    $i = 0;
+    $values = "";
+    $values2 = "";
+    while ($i < sizeof($preferences)) {
+    	//$sql = $db->get_row("SELECT * FROM ")
+        $values .= "WHEN '". $preferences[$i]["categoryid"] ."' THEN '".$preferences[$i]["rating"]."' ";        
+        $values2 .= $preferences[$i]["categoryid"].",";
+        if ($i < (sizeof($preferences) - 1)) { $values .= " "; }
+        $i++;
+      }
+    $values2 = substr($values2,0, -1);
+    if (substr($values, -2) == ", ") { $values = substr($values, 0, sizeof($values) - 3); }
+    $result1 = $db->update_sql("UPDATE `userpreferences` SET pre_rating = CASE cat_id ".$values." END WHERE cat_id IN (".$values2.") AND acc_id = $loggeduser;");
+    if ($result1) {
+      $db->commit();
+      die("OK");
+    } else {
+      $db->rollback();
+      die("ERROR");
+    }
+?>

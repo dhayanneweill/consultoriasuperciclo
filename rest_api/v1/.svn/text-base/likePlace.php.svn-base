@@ -1,0 +1,37 @@
+<?php
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+
+$place = $_POST['pid'];
+
+$db->begin();
+$result1 = $db->insert_sql("INSERT INTO `likeplace` (`acc_id`,`pla_id`)
+							VALUES('".$_SESSION['loggeduser']['id']."','".$place."')");
+							
+$result1 = $db->insert_sql("INSERT INTO `news` (`new_type`,`new_inReplyTo`,`acc_id`)
+							VALUES('Like','".$place."','".$_SESSION['loggeduser']['id']."')");
+							
+
+if ($result1) {
+	$db->commit();
+	echo json_encode("{ 'status' : 'OK' }");
+} else {
+	$db->rollback();
+	echo json_encode("{ 'status' : 'ERROR' }");
+}	
+
+?>

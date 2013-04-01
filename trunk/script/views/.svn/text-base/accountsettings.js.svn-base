@@ -1,0 +1,193 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.accountsettings = {
+	init: function(){
+		if (whatoodo.user != null && whatoodo.user != 'undefined') {
+			document.getElementById('accountsettings').innerHTML = template.content002;
+    	
+			service.getPhotoprofile(function(data) {
+				whatoodo.accountsettings.renderPhoto(data);	
+			},
+			function() {
+				alert("erro");
+			});
+		
+			service.GetAccountSettings(function(data) {
+				whatoodo.accountsettings.renderSettings(data);	
+			},
+			function() {
+				alert("erro no settings");
+			});
+		
+			service.getUserfriends(function(data) {
+				whatoodo.accountsettings.renderUserfriends(data);	
+			},
+			function() {
+				alert("erro");
+			});
+		
+			whatoodo.accountsettings.render();
+			whatoodo.accountsettings.bind();
+		}else{
+			lib.views.set('home', {}, whatoodo);
+		}
+	},
+	bind: function(){
+	},
+	renderPhoto: function(data){
+		var PhotoProfile = "";
+
+		for( x = 0; x < data['userphoto'].length; x++) {
+			var item = data['userphoto'][x];
+			PhotoProfile += template.imageProfile.replace("{IMG}",item.usp_photo).replace("{NAME}", item.usp_firstname+' '+item.usp_lastname);
+
+		}
+		document.getElementById('box-img-profile').innerHTML = PhotoProfile;
+	},
+	renderUserfriends: function(data){
+		var FriendPhoto = "";
+
+		var tamanho = data['userfriends'].length;
+
+		for( x = 0; x < tamanho; x++) {
+			var item = data['userfriends'][x];
+			FriendPhoto += template.imageFriends.replace("{IMG}",item.usp_photo).replace("{ID}", item.acc_id);
+		}
+		document.getElementById('box-img-friends').innerHTML = template.componentImgFriends.replace("{LIST_IMG}", FriendPhoto);
+
+	},
+	renderSettings: function(data){
+		var listProfile = "";
+		for(x = 0; x < 1; x++){
+			var item = data['useraccount'][x];
+			
+			listProfile += template.componentAccountSetting.replace("{ICONEDIT}","style/img/icons/icon_settings.png")
+			.replace("{EDIT}","Edit Account Settings").replace("{USERNAMELABEL}","User Name").replace("{USERNAME}",item.username)
+			.replace("{PASSLABEL}","Password").replace("{EMAILLABEL}","E-mail")
+			.replace("{EMAIL}",item.email);
+		}	
+		document.getElementById('box-list').innerHTML = listProfile;
+		
+		$('#edit-password').click( function() {
+                whatoodo.accountsettings.passChange();
+        });
+        
+        $('#edit-email').click( function() {
+                whatoodo.accountsettings.emailChange();
+        });
+	},
+	render: function(){
+		document.getElementById('content-right-top').style.display = "none";				
+							
+		//document.getElementById('box-suggestions').innerHTML = template.componentSuggestions.replace("{SUGG}",template.suggestions.replace("{IMG}","style/img/wild.jpg"));	
+		document.getElementById('box-advertising').innerHTML = template.componentAdvertising.replace("{ADV}",template.advertising.replace("{IMG}","style/img/wild.jpg"));				
+	},
+	passChange: function() {
+            $('#edit-password').html("Cancel").unbind('click').click( function() {
+                $('#edit-password').siblings(".editprofile-input").html(whatoodo.accountsettings.changePassMark);
+                $('#edit-password').html("Edit").unbind('click').click( function() {
+                    whatoodo.accountsettings.passChange();
+                });
+            });
+            $('#edit-password').siblings(".editprofile-input").html('<div class="editaccount-miniform"><form id="change-password" method="post" action="javascript:void(0)"><input type="password" name="oldpass" /><p><input type="password" name="pass1" /><p><input type="password" name="pass2" /><div class="editprofile-buttons"><input type="submit" class="button" value="Change Password" /></div></form></div>');
+            $('#change-password').validate({
+                rules: {
+                    oldpass: "required",
+                    pass1: "required",
+                    pass2: {
+                        required: true,
+                        equalTo: '[name|="pass1"]'
+                    }
+                },
+                messages: {
+                    oldpass: "Enter your old password",
+                    pass1: "Enter your new password",
+                    pass2: {
+                        required: "Confirm your password",
+                        equalTo: "Passwords doesn't match"
+                    }
+                },
+                submitHandler: function(form) {
+                    var params = {
+                        url: service.getBaseUrl()+"editAccount.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                            type: "Password",
+                            oldpass: form.oldpass.value,
+                            newpass: form.pass1.value
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                            if (data.status == "OK") {
+                                wtd.alert.showMessage("Password changed successfully!");
+                                $('#edit-password').click();
+                            } else if (data.status == "ERROR" && data.errormsg)
+                                wtd.alert.showMessage(data.errormsg);
+                            else
+                                wtd.alert.showMessage("We got an internal service error, please try again later.");
+                        },
+                        error: function(data) {
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+                    $.ajax(params);
+                    return false;
+                }
+            });
+            $('#change-password').valid();
+        },
+        emailChange: function() {
+            $('#edit-email').html("Cancel").unbind('click').click( function() {
+                $('#edit-email').siblings(".editprofile-input").html(whatoodo.accountsettings.changeEmailMark);
+                $('#edit-email').html("Edit").unbind('click').click( function() {
+                    whatoodo.accountsettings.emailChange();
+                });
+            });
+            $('#edit-email').siblings(".editprofile-input").html('<div class="editaccount-miniform"><form id="change-name" method="post" action="javascript:void(0)"><input type="text" name="email" /><div class="editprofile-buttons"><input type="submit" class="button" value="Change Email" /></div></form></div>');
+            $('#change-name').validate({
+                rules: {
+                    email: {
+                        required: true,
+                        email: true
+                    }
+                },
+                messages: {
+                    email: {
+                        email: "Invalid e-mail!"
+                    }
+                },
+                submitHandler: function(form) {
+                    var params = {
+                        url: service.getBaseUrl()+"editAccount.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                            type: "Email",
+                            email: form.email.value
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                            if (data.status == "OK") {
+                                wtd.alert.showMessage("Your request for e-mail change has been sent. You must validate your e-mail before effectively use it.");
+                                $('#edit-email').click();
+                            } else if (data.status == "ERROR" && data.errormsg)
+                                wtd.alert.showMessage(data.errormsg);
+                            else
+                                wtd.alert.showMessage("We got an internal service error, please try again later.");
+                        },
+                        error: function(data) {
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+                    $.ajax(params);
+                    //return false;
+                }
+            });
+        },
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

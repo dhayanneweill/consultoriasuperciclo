@@ -1,0 +1,182 @@
+<?php
+class Event {
+	public static function getEvents($data) {
+		$db = API::getDb();
+		
+		$data['size'] = 100;
+		
+		return Event::process($data);
+	}
+	public static function process($data) {
+		$db = API::getDb();
+		
+		// Request data setup 
+		$from = $data['from'];
+		$date = date('Y-m-d', $from);
+		$hour = date('G:i', $from);
+		$weekday = date('l', $from);
+		$weekyesterday = date('l', $from - 86400);
+		
+		if (isset($data['q'])) {
+			$q = mysql_escape_string($data['q']);	
+		}
+		if (isset($data['coordinates'])) {
+			$coordinates = explode(",", $data['coordinates']);
+			if (!isset($coordinates[0]) || !is_numeric($coordinates[0]))
+				API::error(400, "Invalid latitude");
+			if (!isset($coordinates[1]) || !is_numeric($coordinates[1]))
+				API::error(400, "Invalid longitude");
+			$latitude = $coordinates[0];
+			$longitude = $coordinates[1];
+		}
+		
+		if (isset($data['offset']))
+			$offset = $data['offset'];
+		else
+			$offset = 0;
+		
+		if (isset($data['size']))
+			$size = $data['size'];
+		else
+			$size = 10;
+		
+		if (isset($data['expand']))
+			$expands = explode(",", $data['expand']);
+		else
+			$expands = Array();
+		
+		if (isset($data['sort']))
+			$sort = $data['sort'];
+		else
+			$sort = null;
+		
+		if (isset($data['globalSearch']))
+			$showType = $data['globalSearch'];
+		else
+			$showType = false;
+		
+		Event::refreshEvents($data);
+		
+		// Selection of all places and business times
+		$result =  $db->select("SELECT *
+								FROM events
+								WHERE eve_when = '$date'");
+								
+		// Process some variables that cannot be processes with SQL (Like Relevance)
+		$list = Array();
+		$slist = Array();
+		$slist['name'] = Array();
+		$slist['relevance'] = Array();
+		while($row = $db->get_row($result)) {
+			if ($row['pla_id'] != NULL)
+				$row['place'] = Place::getPlace($row['pla_id'], $data);
+			
+			/* Relevance calculation */
+			$row['relevance'] = 0;
+			
+			/* Distance */
+			if (isset($latitude) && isset($longitude) && isset($row['place']))
+				$row['distance'] = $row['place']['distance'];
+			
+			// TODO Verificar valores (Documento de 1 a 10, mas não válido)
+			if (isset($row['distance'])) {
+				if ($row['distance'] < 10)
+					$row['relevance'] += 400;
+				else if ($row['distance'] < 30)
+					$row['relevance'] += 300;
+				else if ($row['distance'] < 50)
+					$row['relevance'] += 200;
+			}
+			
+			/* Time proximity - 0 to 100 */ //TODO Refazer esses valores uma vez que não foram previstos em horas e sim em dias
+			$diffSecs = abs(strtotime($date." ".$row['eve_hour']) - $from);
+			$diffMins = intval($diffSecs / 60);
+			
+			if ($diffMins < 30)
+				$row['relevance'] += 50;
+			else if ($diffMins < 60)
+				$row['relevance'] += 40;
+			else if ($diffMins < 120)
+				$row['relevance'] += 30;
+			else if ($diffMins < 240)
+				$row['relevance'] += 20;
+				
+			/* List and sorting filters setup */
+			array_push($list, $row);
+			array_push($slist['name'], $row['eve_name']);
+			array_push($slist['relevance'], $row['relevance']);
+		}
+		
+		// Sorting
+		switch ($sort) {
+			case 'name':
+				if (!array_multisort($slist['name'], SORT_DESC, $list))
+					API::Error(500, "Failed to sort list");
+				break;
+				
+			default:
+				if (!array_multisort($slist['relevance'], SORT_DESC, $list))
+					API::Error(500, "Failed to sort list");
+				break;
+			
+		}
+		
+		// Object build and return
+		$return = Array();
+		for ($i = $offset; $i < ($offset + $size) && $i < sizeof($list) && $list[$i]['relevance'] > 0; $i++)
+			array_push($return, Event::base($list[$i], $data));
+		return $return;
+	}
+	public static function refreshEvents($data) {
+		$db = API::getDb();
+		
+		// Request data setup 
+		$from = $data['from'];
+		$date = date('Y-m-d', $from);
+		$hour = date('G:i', $from);
+		$weekday = date('l', $from);
+		$weekyesterday = date('l', $from - 86400);
+		
+		$queryString = "INSERT IGNORE INTO events (eve_when, eve_hour, eve_name, eve_info, acc_id, pla_id, eve_cost) VALUES ";
+		$result2 = $db->select("SELECT *
+								FROM businesstime, place
+								WHERE bus_day = '$weekday'
+								AND businesstime.pla_id = place.pla_id");
+								
+		while($row = $db->get_row($result2)) {
+			$queryString .= "('$date', '".$row['bus_start']."', '".mysql_escape_string($row['pla_name'])."', '".mysql_escape_string($row['pla_description'])."', '".$row['acc_id']."', '".$row['pla_id']."', '".$row['pla_cost']."'),";
+		}
+		$queryString = substr($queryString, 0, -1);
+		
+		$db->insert_sql($queryString);
+	} 
+	public static function base($row, $data) {
+		$event = Array();
+		
+		if (isset($showType) && $showType == true)
+				$event['type'] = 'event';
+
+		$event['id'] = $row['eve_id'];
+		$event['name'] = $row['eve_name'];
+		if (isset($row['place'])) 
+			$event['where'] = $row['place'];
+		else
+			$event['where'] = $row['eve_where'];
+		$event['description'] = $row['eve_info'];
+		if (isset($row['eve_photo']) && $row['eve_photo'] != null)
+			$event['image'] = urlimage($row['eve_photo'], "events");
+		else
+			$event['image'] = $row['place']['image'];
+		if (isset($expands) && in_array("creator", $expands))
+			$event['creator'] = User::getUser($row['acc_id']);
+		else
+			$event['creator'] = $row['acc_id'];
+		$event['cost'] = Finantial::getCost($row['eve_cost']);
+		$event['starts'] = $row['eve_hour'];
+		$event['people'] = $row['eve_go'];
+		$event['relevance'] = $row['relevance'];
+		
+		return $event;
+	}
+}
+?>

@@ -1,0 +1,100 @@
+<?php
+//Raw protection
+session_start();
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+
+if (!isset($_SESSION['loggeduser']['lastsuggestion'])) {
+  $_SESSION['loggeduser']['lastsuggestion']['acc_id'] = 0;
+}
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+//Performs the search
+
+$result = $db->select("SELECT DISTINCT userprofile.acc_id, userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname
+                       FROM userfriends,userprofile 
+                       WHERE userfriends.acc_id = ".$_SESSION['loggeduser']['id']."
+                       AND userprofile.acc_id IN
+                        (SELECT usf_id
+                        FROM userfriends
+                        WHERE usf_id NOT IN
+                          (SELECT usf_id FROM userfriends
+                           WHERE acc_id = ".$_SESSION['loggeduser']['id'].")
+                           AND usf_id != ".$_SESSION['loggeduser']['id']."
+                           AND usf_status = 'Accepted'
+                           GROUP BY usf_id)
+                       ORDER BY rand() LIMIT 30");            
+$return = array();
+
+while ($linha = $db->get_row($result)) {
+	if($linha['usp_photo'] != NULL){
+		$linha['usp_photo'] = urlimage($linha['usp_photo'], "user");
+	}else{
+		$linha['usp_photo'] = 'style/img/fotoperfil.png';
+	}
+  //Mutual friends
+  $mutualFriends = $db->select_one("SELECT COUNT(1) FROM userfriends
+                                    WHERE acc_id = ".$_SESSION['loggeduser']['id']." AND usf_id IN
+                                   (SELECT usf_id FROM userfriends WHERE acc_id = ".$linha['acc_id'].")");
+  $linha['mutual_friends'] = $mutualFriends;
+  //Action
+  $linha['action_icon'] = 'images/icons/icon_addnewfocus.png';
+  $linha['action'] = 'Add as a friend';
+  $linha['acc_id'] = trim($linha['acc_id'],0);
+  $linha['action_link'] = '?page=profile&uid='.$linha['acc_id'];
+  array_push($return, $linha);
+} 
+//print_r($return);
+mysql_free_result($result);
+
+$result = $db->select("SELECT DISTINCT userprofile.acc_id, usp_photo, usp_firstname, usp_lastname
+                       FROM userprofile, userpreferences
+                       WHERE userprofile.acc_id = userpreferences.acc_id
+                       AND userpreferences.cat_id IN
+                          (SELECT cat_id
+                          FROM userpreferences
+                          WHERE pre_rating = (
+                          SELECT MAX( pre_rating )FROM userpreferences )
+                          AND acc_id =".$_SESSION['loggeduser']['id']."
+                          ORDER BY rand())
+                       AND pre_rating > 4
+                       AND userprofile.acc_id != ".$_SESSION['loggeduser']['id']."
+                       AND userprofile.acc_id NOT IN
+                          (SELECT acc_id
+                          FROM userfriends
+                          WHERE usf_id = ".$_SESSION['loggeduser']['id'].")
+                          ");
+while ($linha = $db->get_row($result)) {
+	if($linha['usp_photo'] != NULL){
+		$linha['usp_photo'] = urlimage($linha['usp_photo'], "user");
+	}else{
+		$linha['usp_photo'] = 'style/img/fotoperfil.png';
+	}
+  
+  
+  $catchUp = $db->select_one("SELECT COUNT(1) FROM userfriends
+                                    WHERE acc_id = ".$_SESSION['loggeduser']['id']." AND usf_id IN
+                                    (SELECT usf_id FROM userfriends WHERE acc_id = ".$linha['acc_id'].")");
+  $linha['mutual_friends'] = $catchUp;
+  //Action
+  $linha['action_icon'] = 'images/icons/icon_addnew.png';
+  $linha['action'] = 'Catch up on Whatoodo';
+  $linha['action_link'] = '?page=profile&uid='.$linha['acc_id'];
+  array_push($return, $linha);
+} 
+mysql_free_result($result);
+
+header('Content-Type: text/json; charset=UTF-8');
+if ($return){
+	echo json_encode($return);
+}else{
+	die(json_encode(Array("status" => "NOSUGGESTIONS")));
+}
+?>

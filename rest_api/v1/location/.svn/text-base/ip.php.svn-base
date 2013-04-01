@@ -1,0 +1,22 @@
+<?php
+session_start();
+include '../api.php';
+include '../model/ipdata.php';
+include '../model/weatherdata.php';
+
+$return = Array();
+switch(API::getMethod())
+{
+	case 'get':
+		$ipdata = IPData::getIpData();
+		$_GET['coordinates'] = $ipdata['latitude'].','.$ipdata['longitude'];
+		$ipdata['weather'] = WeatherData::getWeatherData();
+		array_push($return, $ipdata);
+		break;
+		
+	default:
+		API::error(501, "Not supported.");
+		return;
+}
+API::response($return);
+?>

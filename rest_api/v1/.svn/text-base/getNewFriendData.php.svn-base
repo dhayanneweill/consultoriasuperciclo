@@ -1,0 +1,52 @@
+<?php
+
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+$id = $_POST['pid'];
+
+//Performs the main query
+$result = $db->select("SELECT usp_firstname, usp_lastname, usp_birthdate, usp_photo, usp_gender, usp_city, usp_country FROM userprofile WHERE acc_id = $id ");
+$return = $db->get_row($result);
+if($return['usp_photo'] != NULL){
+	$return['usp_photo'] = urlimage($return['usp_photo'], "user");
+}else{
+	$return['usp_photo'] = 'style/img/fotoperfil.png';
+}
+$return['list'] = array();
+$return['age'] = age($return['usp_birthdate']);
+$result = $db->select("SELECT lis_id, lis_name FROM list WHERE acc_id = ".$_SESSION['loggeduser']['id']);
+while ($row = $db->get_row($result)) {
+  array_push($return['list'], $row);
+} 
+
+$return['friendsData'] = array();
+$result = $db->select("SELECT usp_photo, usp_firstname, usp_lastname FROM userprofile WHERE acc_id IN
+							 (SELECT usf_id FROM userfriends WHERE usf_id IN
+							 (SELECT usf_id FROM userfriends WHERE acc_id = ".$_SESSION['loggeduser']['id']." ) AND acc_id = $id AND usf_id != $id ) LIMIT 7");
+
+
+while ($row = $db->get_row($result)) {
+  	if($row['usp_photo'] != NULL){
+		$row['usp_photo'] = urlimage($row['usp_photo'], "user");
+	}else{
+		$row['usp_photo'] = 'style/img/fotoperfil.png';
+	}
+  array_push($return['friendsData'], $row);
+} 
+mysql_free_result($result);
+echo json_encode($return);
+?>

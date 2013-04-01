@@ -1,0 +1,179 @@
+<?php
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+
+//Geolocation Processing
+if (!isset($_SESSION['ipdata'])) {
+	$ip = $_SERVER['REMOTE_ADDR'];
+	if ($ip == '127.0.0.1' || $ip == '::1' || substr($ip, 0, 7) == "192.168") {
+		$ip = '201.75.100.140';
+	}
+	$response = file_get_contents('http://api.ipinfodb.com/v2/ip_query.php?key=e456930218ef16c3210ed505e5d4164caebff99f15a4ddce7ae33c7457ab074c&output=json&timezone=false&ip='.$ip);
+	$_SESSION['ipdata'] = json_decode($response, true);
+	if ($_SESSION['ipdata']['Status'] != "OK") {
+		$_SESSION['ipdata'] = json_decode('{ "Status" : "OK", "CountryCode" : "BR", "CountryName" : "Brazil", "RegionCode" : "4", "RegionName" : "Amazonas", "City" : "Manaus", "ZipPostalCode" : "", "Latitude" : "-10", "Longitude" : "-55", "Timezone" : "0", "Gmtoffset" : "0", "Dstoffset" : "0", "TimezoneName" : "", "Isdst" : "", "Ip" : "200.160.99.67" }', true);
+	} if (!isset($_SESSION['ipdata']['City']) || $_SESSION['ipdata']['City'] == "") {
+	  $_SESSION['ipdata']['City'] = "São Paulo";
+	  $_SESSION['ipdata']['RegionName'] = "São Paulo";
+	}
+}
+
+//First case - people
+if (isset($_SESSION['loggeduser']['id'])){
+if (!isset($GET_q)) {
+$result =  $db->select("SELECT userprofile.acc_id AS id,
+                        CONCAT(userprofile.usp_firstname, ' ', userprofile.usp_lastname) AS name,
+                        userprofile.usp_photo AS image, userprofile.usp_city, userprofile.usp_country
+                        FROM userprofile, userfriends
+                        WHERE userfriends.acc_id = '".$_SESSION['loggeduser']['id']."'
+                        AND userfriends.usf_id = userprofile.acc_id"); 
+} else {
+$q = mysql_real_escape_string(str_replace("%", "", $GET_q));
+if ($q == "") { die(json_encode(array())); }
+$result =  $db->select("SELECT userprofile.acc_id AS id,
+                        CONCAT(userprofile.usp_firstname, ' ', userprofile.usp_lastname) AS name,
+                        userprofile.usp_photo AS image, userprofile.usp_city, userprofile.usp_country
+                        FROM userprofile
+                        WHERE CONCAT(userprofile.usp_firstname, ' ', userprofile.usp_lastname) LIKE '%".$q."%'
+                        AND userprofile.acc_id != '".$_SESSION['loggeduser']['id']."'");
+}
+$return = Array();
+while($row = $db->get_row($result)) {
+  $row['image'] = urlimage($row['image'], "user");
+  
+  $row['link'] = '?page=friendprofile&pid='.$row['id'];
+  $row['description'] = $row['usp_city'].", ".$db->select_one("SELECT printable_name FROM country WHERE iso = '".$row['usp_country']."'");
+  $isFriend = $db->select_one("SELECT acc_id FROM userfriends
+  								WHERE acc_id = ".$_SESSION['loggeduser']['id']."
+  								AND usf_id = ".$row['id']."
+  								AND usf_status = 'Accepted'");
+  if ($isFriend) {
+  	$row['dataType'] = 'friend';
+  } else {
+  	$row['dataType'] = 'user';
+  }
+  $mutualFriends = $db->select_one("SELECT COUNT(1) FROM userfriends
+                                    WHERE acc_id = ".$_SESSION['loggeduser']['id']." AND usf_id IN
+                                    (SELECT usf_id FROM userfriends WHERE acc_id = ".$row['id'].")");
+  if ($mutualFriends > 0) {
+    $row['statistic'] = $mutualFriends.' mutual friends.';
+  } else {
+    $row['statistic'] = '';
+  }
+  array_push($return, $row);
+}
+
+mysql_free_result($result);
+if (!isset($GET_q)) {
+  die(json_encode($return));
+}
+
+//Second case - places
+$result = $db->select("SELECT DISTINCT id, name, image, pla_city, pla_country,
+               (CASE confirmed
+                    WHEN  0 THEN 0                    
+                    WHEN  1 THEN 50                    
+                    WHEN  2 THEN 100                    
+                    WHEN  3 THEN 150                    
+                    WHEN  4 THEN 200
+                    ELSE 200
+                    END)+
+                    (CASE my_event
+                    WHEN '0' THEN 0
+                    ELSE 5000
+                    END)+
+                    (CASE placeinfo.pla_city
+                    WHEN '".$_SESSION['ipdata']['City']."' THEN 1000
+                    ELSE 0
+                    END)+
+                    (CASE bus_promoday
+                    WHEN 1 THEN 100
+                    ELSE 0
+                    END)+                    
+                    (CASE pre_rating_average
+                    WHEN 1 THEN 50
+                    WHEN 2 THEN 100
+                    WHEN 3 THEN 200
+                    WHEN 4 THEN 400
+                    WHEN 5 THEN 800
+                    ELSE 0
+                    END)+
+                    (CASE rev_average
+                    WHEN 1 THEN 50
+                    WHEN 2 THEN 100
+                    WHEN 3 THEN 200
+                    WHEN 4 THEN 400
+                    WHEN 5 THEN 800
+                    ELSE 0
+                    END)+
+                    (CASE my_review
+                    WHEN 1 THEN 25
+                    WHEN 2 THEN 50
+                    WHEN 3 THEN 100
+                    WHEN 4 THEN 200
+                    WHEN 5 THEN 400
+                    ELSE 0
+                    END) AS relevance
+FROM (SELECT DISTINCT placereview.rev_rating AS my_review, pre_rating, placeinfo.cat_id AS place_cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, my_event, pre_rating_average, rev_average, COUNT(reply_event) AS confirmed
+     FROM (SELECT DISTINCT IFNULL(pre_rating, 0) AS pre_rating, placeinfo.cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, eve_id, IFNULL(eve_name,0) AS my_event, ROUND(IFNULL(AVG(pre_rating),0)) AS pre_rating_average, ROUND(IFNULL(AVG(rev_rating),0)) AS rev_average
+          FROM (SELECT DISTINCT cat_id, cat_name, place.pla_id AS id, place.pla_name AS name, place.pla_photo AS image, place.pla_city, place.pla_country
+               FROM place,placetags,  category
+               WHERE place.pla_id = placetags.pla_id
+               AND place.pla_city = '".$_SESSION['ipdata']['City']."'
+               AND category.cat_name = placetags.plt_tag
+               AND (placetags.plt_tag = '".$q."'
+               OR place.pla_description LIKE '%".$q."%'
+               OR place.pla_name LIKE '%".$q."%')) as placeinfo
+          LEFT JOIN userpreferences ON userpreferences.cat_id = placeinfo.cat_id AND userpreferences.acc_id = '".$_SESSION['loggeduser']['id']."'
+          LEFT JOIN businesstime ON businesstime.pla_id = id AND businesstime.bus_day = '".date("l")."'
+          LEFT JOIN events ON events.pla_id = id AND events.acc_id = '".$_SESSION['loggeduser']['id']."'
+          LEFT JOIN placereview ON placereview.pla_id = id
+          GROUP BY id)placeinfo
+     LEFT JOIN userevent ON userevent.id_eve = eve_id AND userevent.reply_event = 'Yes'     
+     LEFT JOIN placereview ON placereview.pla_id = id AND placereview.acc_id = '".$_SESSION['loggeduser']['id']."'
+     GROUP BY id) placeinfo     
+ORDER BY relevance DESC
+LIMIT 9");
+}else{
+  		$q = mysql_real_escape_string(str_replace("%", "", $GET_q));
+  		$return = Array();
+  		$result = $db->select("SELECT DISTINCT cat_id, cat_name, place.pla_id AS id, place.pla_name AS name, place.pla_photo AS image, place.pla_city, place.pla_country
+               FROM place,placetags,  category
+               WHERE place.pla_id = placetags.pla_id
+               AND place.pla_city = '".$_SESSION['ipdata']['City']."'
+               AND category.cat_name = placetags.plt_tag
+               AND (placetags.plt_tag = '".$q."'
+               OR place.pla_description LIKE '%".$q."%'
+               OR place.pla_name LIKE '%".$q."%')");
+}
+while($row = $db->get_row($result)) {
+  $row['image'] = urlimage($row['image'], "places");
+    
+  $row['link'] = '?page=placeprofile&pid='.$row['id'];
+  $row['description'] = $row['pla_city'].", ".$db->select_one("SELECT printable_name FROM country WHERE iso = '".$row['pla_country']."'");
+  $row['statistic'] = '';
+  $row['dataType'] = 'place';
+  array_push($return, $row);
+}
+//print_r($return);
+
+mysql_free_result($result);
+
+//Response
+echo json_encode($return);
+
+?>

@@ -1,0 +1,218 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.preferences = {
+	init : function() {
+		if(whatoodo.user != null && whatoodo.user != 'undefined') {
+			service.getPreferences(function(data) {
+				whatoodo.preferences.render(data);
+				
+				service.getPhotoprofile(function(data) {
+					whatoodo.home.renderPhoto(data);
+					
+				}, function() {
+					wtd.alert.showMessage("Error while printing your picture");
+				});
+				
+				var element = $('#maincategory-container :first-child');
+				var name = $('#maincategory-container :first-child').attr('id');
+				whatoodo.preferences.selectCategory(element, name);
+				whatoodo.preferences.bind();
+				whatoodo.preferences.renderUserMenu();
+			}, function() {
+				wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+			});
+		} else {
+			lib.views.set('home', {}, whatoodo);
+		}
+		
+
+	},
+	bind : function() {
+		$('#maincategory-container').children().click(function() {
+			var element = this;
+			var name = this.id;
+			whatoodo.preferences.selectCategory(element, name);
+		});
+		$('.rating').each(function() {
+			var initialrate = $(this).attr("initialrate");
+			$(this).ratings(5, initialrate).bind('ratingchanged', function(event, data) {
+				$(this).attr("rate", data.rating);
+			});
+			$(this).attr("rate", initialrate);
+		});
+		$('.rating').click(function(){
+			var id = $(this).attr('id').split('-');
+			if($(this).attr('rate')!=0){
+				
+				$('#element-'+id[1]).css('opacity','1');
+			}else{
+				$('#element-'+id[1]).css('opacity','0.1');
+			}
+			
+		});
+		$('#finish').click(function() {
+			whatoodo.preferences.finishRegistration();
+		});
+	},
+	render : function(data) {
+		//var _template = template.teste;
+		//alert('TEste1');
+		var preferencesform = "";
+		var elements = "";
+		var maincat = "";
+		var ratingcat = "";
+
+		//alert(data['countries'].length);
+		//var x = 0;
+
+		//for(x = 0; x < 1; x++){
+		preferencesform += template.componentPreferences.replace("{RATE YOUR INTERESTS}", "Rate your interest");
+		document.getElementById('preferences').innerHTML = preferencesform;
+
+		for( i = 0; i < data['maincat'].length; i++) {
+			maincat += '<p id=l-' + data['maincat'][i]['id'] + '><img src="style/img/categories/' + data['maincat'][i]['categoryname'].toLowerCase() + '_TH.png" />' + data['maincat'][i]['categoryname'] + '</p>';
+		}
+		document.getElementById('maincategory-container').innerHTML = maincat;
+		
+		for( i = 0; i < data['maincat'].length; i++) {
+			var cellcounter = 0;
+			for( j = 0; j < data['categories'].length; j++) {
+				if(data['maincat'][i]['id'] == data['categories'][j]['catparent']) {
+					if(cellcounter % 9 == 0 && cellcounter > 0) {
+						elements += "</tr><tr>";
+					}
+					elements += '<td id="parent-' + data['maincat'][i]['id'] + '" class="column"><div id="element-' + data['categories'][j]['id'] + '" class="element"><h1>' + data['categories'][j]['acronym'] + '</h1>' + data['categories'][j]['categoryname'] + '</div></td>';
+					cellcounter++;
+				}
+			}
+			elements += "</tr>";
+		}
+		document.getElementById('elements-table').innerHTML = elements;
+		for( i = 0; i < data['maincat'].length; i++) {
+			var cellcounter = 0;
+			ratingcat += '<div id="d-' + data['maincat'][i]['id'] + '" class="col"></br>' + '<table id="category-rating-table" class="rating-table"><tr class="row">';
+			for( j = 0; j < data['categories'].length; j++) {
+				if(data['maincat'][i]['id'] == data['categories'][j]['catparent']) {
+					if(cellcounter % 3 == 0 && cellcounter > 0) {
+						ratingcat += '</tr><tr class="row">';
+					}
+					ratingcat += '<td class="cell"><div class="stars"><p>' + data['categories'][j]['categoryname'] + '</p>' + '<span initialrate="' + data['categories'][j]['prerating'] + '" rate="0" class="rating" parent="' + data['maincat'][i]['id'] + '" id="rating-' + data['categories'][j]['id'] + '" labelid="' + data['categories'][j]['id'] + '" style="float: right" ></span>' + '</div></td>';
+					if (data['categories'][j]['prerating']!= 0 ){
+						$('#element-'+data['categories'][j]['id']).css('opacity','1');
+					}
+					cellcounter++;
+				}
+			}
+			ratingcat += '</tr></table></div>';
+		}
+		ratingcat += '</tr>';
+		document.getElementById('category-rating-container').innerHTML = ratingcat;
+
+	},
+	renderUserMenu : function() {
+		var params = {
+			url : service.getBaseUrl() + "getNotifications.php",
+			global : false,
+			type : "POST",
+			dataType : "json",
+			async : true,
+			data : {
+
+			},
+			success : function(data) {
+				//$('#box-menu-profile').append(template.componentMenuProfile);
+				document.getElementById('box-menu-profile').innerHTML = template.componentMenuProfile.replace("{USERID}", data['uid']).replace("{PROFILE}", i18n[whatoodo.lang].TEXT_PROFILE).replace("{EVENTS}", i18n[whatoodo.lang].TEXT_EVENTS).replace("{FRIENDS}", i18n[whatoodo.lang].TEXT_FRIENDS).replace("{COUNT}", ' + ' + data['pendingEvents']).replace("{COUNTFR}", ' + ' + data['pendingFriends']);
+				
+				//alert("tesetes");
+
+			},
+			error : function(data) {
+				wtd.alert.showMessage("An error ocurred when the menu was being rendered.");
+			}
+		};
+		$.ajax(params);
+	},
+	selectCategory : function(element, name) {
+		var name = name.split("-")[1];
+
+		$('#maincategory-container').children().removeClass('selected');
+		$(element).addClass('selected');
+
+		//Color the table
+		$('.column').each(function() {
+			if(this.id.split("-")[1] == name) {
+
+				$(this).children().css('background-image', 'url(style/img/categories/inactive_TP.png)');
+				$(this).parent().css('display', '');
+			} else {
+				$(this).parent().css('display', 'none');
+
+			}
+		});
+		//Show/Hide the stars.
+		$('#category-rating-container').children().each(function() {
+			if(this.id.split("-")[1] == name || this.id == "down-title") {
+				$(this).css('display', 'table-row');
+			} else {
+				$(this).css('display', 'none');
+			}
+		});
+	},
+	finishRegistration : function() {
+		var preferences = new Array();
+		$('.rating').each(function() {
+			//var stars = new Array();
+			preferences.push({
+				categoryid : this.id.split("-")[1],
+				rating : $(this).attr('rate')
+			});
+		});
+		var data = {
+			preferences : preferences
+		}, params = {
+			url : service.getBaseUrl() + "editpreferences.php",
+			global : false,
+			type : "POST",
+			data : {
+				"data" : data
+			},
+			dataType : "text",
+			async : false,
+			success : function(msg) {
+				//TODO Handler "OK" or "ERROR"
+				if(msg == "OK")
+					wtd.alert.showMessage("Preferences updated!", {
+						timeout : 10000,
+						callback : function() {
+							//lib.views.set('home', {}, whatoodo);
+							whatoodo.getPage('home',whatoodo);
+						}
+					});
+				else if(msg == "ERROR")
+					wtd.alert.showMessage("One or more fields are invalid! Please, verify them and try again.", {
+						callback : function() {
+							window.refresh
+						}
+					});
+				else
+					wtd.alert.showMessage("We got an internal service error, please try again later.", {
+						callback : function() {
+							window.refresh
+						}
+					});
+			},
+			error : function(data) {
+				wtd.alert.showMessage("We got an internal server error, please try again later.", {
+					callback : function() {
+						window.refresh
+					}
+				});
+			}
+		};
+		//Envia a requisição
+		$.ajax(params);
+	},
+	destroy : function() {
+	}
+};
+window.whatoodo = whatoodo;

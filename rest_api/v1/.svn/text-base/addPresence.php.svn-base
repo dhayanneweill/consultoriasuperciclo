@@ -1,0 +1,35 @@
+<?php
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+session_start();
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+header('Content-Type: text/json; charset=UTF-8');
+
+$author = $_SESSION['loggeduser']['id'];
+$event = mysql_real_escape_string($POST_eventid);
+$date = date('Y-m-d H:i:s');
+
+$result = $db->update_sql("UPDATE userevent SET reply_event = 'yes', date = '".$date."' WHERE acc_id = '".$author."' AND id_eve = '".$event."' ");
+$usergo = $db->select_one("SELECT COUNT(1) FROM userevent WHERE id_eve = '".$event."' AND reply_event = 'yes' ");
+$usergo += 1;
+$result2 = $db->update_sql("UPDATE events SET eve_go = '".$usergo."' WHERE eve_id = '".$event."' ");
+
+$result1 = $db->insert_sql("INSERT INTO `news` (`new_type`,`new_mention`,`acc_id`)
+							VALUES('Event','".$event."','".$_SESSION['loggeduser']['id']."')");
+                           
+if ($result && $result2) {
+    $db->commit();
+	echo json_encode("{ 'status' : 'OK' }");
+} else {
+    $db->rollback();
+    die(json_encode(Array("status" => "ERROR")));
+}
+?>

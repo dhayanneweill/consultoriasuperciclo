@@ -1,0 +1,37 @@
+<?php
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+$friendid  =  mysql_real_escape_string($POST_friendid);
+
+//Get the group administrator
+$loggeduser = $_SESSION['loggeduser']['id'];
+$db->begin();
+$result = $db->update_sql("DELETE FROM userfriends 
+                           WHERE (acc_id = $loggeduser AND usf_id = $friendid) OR (acc_id = $friendid AND usf_id = $loggeduser)");
+  
+  
+//Response
+if ($result) {
+	$db->commit();
+  
+	die(json_encode(Array("status" => "OK")));
+} else {
+	$db->rollback();
+	die(json_encode(Array("status" => "ERROR")));
+}	
+
+
+?>

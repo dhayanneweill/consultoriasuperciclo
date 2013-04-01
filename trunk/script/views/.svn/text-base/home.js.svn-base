@@ -1,0 +1,1367 @@
+var whatoodo = window.whatoodo || {};
+whatoodo.baseUrl = service.getBaseUrl();
+
+whatoodo.home = {
+	newsCache : Array(),
+	newsCounter : 0,
+	cache : undefined,
+	validUsername : false,
+	validEmail : false,
+	init : function() {
+		if(whatoodo.user != null && whatoodo.user != 'undefined') {
+			whatoodo.home.timelineSize = 4;
+			$('#recommend-place').hide();
+
+			// Logged in case - Profile
+			document.getElementById('home').innerHTML = template.content002;
+			service.getPhotoprofile(function(data) {
+				whatoodo.home.renderPhoto(data);
+			}, function() {
+				wtd.alert.showMessage("Error while print your picture");
+			});
+			whatoodo.home.renderSuggestionsFriends();
+			/*service.getUserfriends(function(data) {
+			 whatoodo.home.renderUserfriends(data);
+			 }, function() {
+			 wtd.alert.showMessage("Error while print your friends");
+			 });*/
+			service.getFeed(function(data) {
+				whatoodo.home.renderFeed(data);
+			}, function() {
+				wtd.alert.showMessage("Error while print your feeds");
+			});
+			service.getSuggestion(function(data) {
+				whatoodo.home.cache = data;
+				whatoodo.home.renderSuggestion();
+				
+			}, function() {
+				wtd.alert.showMessage("Erro while suggest new friends");
+			});
+		} else {
+			// Not Logged in case - Home
+			whatoodo.home.timelineSize = 5;
+			document.getElementById('home').innerHTML = template.content001 + template.dialogNewMember;
+			service.getActivity(function(data) {
+				whatoodo.home.renderActivity(data);
+			}, function() {
+				//alert("teste");
+			});
+			whatoodo.home.render();
+		}
+		$('#change-date-field').datepicker({
+			dateFormat : 'yy/mm/dd',
+			yearRange : '0:+10',
+			changeMonth : true,
+			changeYear : true,
+			altField : '#change-date-field',
+			onSelect : function() {
+				whatoodo.home.showTimeline(dateToSeconds($('#change-date-field').val()), whatoodo.home.timelineSize);
+			}
+		});
+		whatoodo.home.showTimeline(getCurrentTime(), whatoodo.home.timelineSize);
+		whatoodo.home.bind();
+		$("#new-member-form").validate();
+	},
+	bind : function() {
+		$('#other-date-button').click(function() {
+			//sets the position of the calendar
+			$('#change-date-field').position({
+				of : $('#options-container'),
+				my : 'right bottom',
+				at : 'right top',
+				offset : '-175 75',
+				collision : 'none'
+			});
+			$('#change-date-field').datepicker("show");
+		});
+
+		$('.close').click(function() {
+			$('.home-hello-msg').hide();
+			$('#new-member-dialog').hide();
+
+		});
+		$("#newmember-username").blur(function() {
+			if($("#newmember-username").valid()) {
+				whatoodo.home.validateUsername();
+			}
+		});
+		$("#newmember-email").blur(function() {
+			if($("#newmember-username").valid()) {
+				whatoodo.home.validateEmail();
+			}
+		});
+		$('#bt-confirm-member').click(function() {
+			if(!$("#new-member-form").valid() || whatoodo.home.validUsername == false || whatoodo.home.validEmail == false) {
+				return;
+			}
+			whatoodo.home.finishRegistration();
+		});
+
+		$('.whatsup').click(function() {
+
+		});
+		$('.content-header-search').focus(function() {
+			if($('.header-search').val() == "  WHAT WOULD YOU LIKE TO DO?") {
+				$('.header-search').val("");
+			}
+		});
+		$('.content-header-search').blur(function() {
+			if($('.header-search').val() == "") {
+				$('.header-search').val("  WHAT WOULD YOU LIKE TO DO?");
+			}
+		});
+	},
+	validateUsername : function() {
+		if($('#newmember-username').val() == "") {
+			$('#reg-username ~ label').remove();
+			whatoodo.home.validUsername = false;
+			return false;
+		}
+		//Ajusta os dados e a conexão
+		var regdata = {
+			type : 1,
+			username : $('#newmember-username').val()
+		};
+		var params = {
+			url : service.getBaseUrl() + "registernewuser.php",
+			global : false,
+			type : "POST",
+			data : {
+				data : regdata
+			},
+			dataType : "text",
+			async : true,
+			success : function(response) {
+				if(response == "OK") {
+					$('label[for="newmember-username"]').addClass('valid');
+					$('label[for="newmember-username"]').removeClass('invalid');
+					$('label[for="newmember-username"]').text('Valid username!');
+					$('label[for="newmember-username"]').show();
+					whatoodo.home.validUsername = true;
+					return true;
+				} else if(response == "ALREADYEXISTS") {
+					$('label[for="newmember-username"]').addClass('invalid');
+					$('label[for="newmember-username"]').removeClass('valid');
+					$('label[for="newmember-username"]').text('This username already exists!');
+					$('label[for="newmember-username"]').show();
+					whatoodo.home.validUsername = false;
+					return false;
+				} else {
+					$('label[for="newmember-username"]').addClass('invalid');
+					$('label[for="newmember-username"]').removeClass('valid');
+					$('label[for="newmember-username"]').text('No connection to the database.');
+					$('label[for="newmember-username"]').show();
+					whatoodo.home.validUsername = false;
+					return false;
+				}
+			},
+			error : function(params) {
+				$('label[for="newmember-username"]').addClass('invalid');
+				$('label[for="newmember-username"]').removeClass('valid');
+				$('label[for="newmember-username"]').text('No connection with the server.');
+				$('label[for="newmember-username"]').show();
+				whatoodo.home.validUsername = false;
+				return false;
+			}
+		};
+		//Envia a requisição
+		$.ajax(params);
+	},
+	validateEmail : function() {
+		if($('#newmember-email').val() == "") {
+			$('#newmember-email ~ label').remove();
+			whatoodo.home.validEmail = false;
+			return false;
+		}
+		var params = {
+			url : service.getBaseUrl() + "verifyemail.php",
+			global : false,
+			type : "POST",
+			data : {
+				email : $('#newmember-email').val()
+			},
+			dataType : "json",
+			async : true,
+			success : function(data) {
+				if(data.status == "OK") {
+					$('label[for="newmember-email"]').addClass('valid').removeClass('invalid').text('Valid email!').show();
+					whatoodo.home.validEmail = true;
+					return true;
+				} else if(data.status == "ALREADYTAKEN") {
+					$('label[for="newmember-email"]').addClass('invalid').removeClass('valid').text('This email is already taken!').show();
+					whatoodo.home.validEmail = false;
+					return false;
+				} else {
+					$('label[for="newmember-email"]').addClass('invalid').removeClass('valid').text('No connection to the database.').show();
+					whatoodo.home.validEmail = false;
+					return false;
+				}
+			},
+			error : function() {
+				$('label[for="reg-email"]').addClass('invalid').removeClass('valid').text('No connection with the server.').show();
+				whatoodo.home.validEmail = false;
+				return false;
+			}
+		};
+		//Envia a requisição
+		$.ajax(params);
+	},
+	finishRegistration : function() {
+		var registerdata = {
+			type : 2,
+			username : $('#newmember-username').val(),
+			password : sha1($('#newmember-password').val()),
+			email : $('#newmember-email').val(),
+			country : whatoodo.location.countrycode
+		}, params = {
+			url : service.getBaseUrl() + "registernewuser.php",
+			global : false,
+			type : "POST",
+			data : {
+				data : registerdata
+			},
+			dataType : "text",
+			async : false,
+			success : function(msg) {
+				//TODO Handler "OK" or "ERROR"
+				$('#new-member-dialog').hide();
+				if(msg == "OK")
+
+					wtd.alert.showMessage("Registration done! An email was sent to you, please confirm it.", {
+						timeout : 10000,
+						callback : function() {
+							whatoodo.getPage("home", whatoodo);
+							//window.location = 'index.php';
+						}
+					});
+				else if(msg == "ERROR")
+					wtd.alert.showMessage("One or more fields are invalid! Please, verify them and try again.", {
+						callback : function() {
+							window.refresh
+						}
+					});
+				else
+					wtd.alert.showMessage("We got an internal service error, please try again later.", {
+						callback : function() {
+							window.refresh
+						}
+					});
+			},
+			error : function(data) {
+				wtd.alert.showMessage("We got an internal server error, please try again later.", {
+					callback : function() {
+						window.refresh
+					}
+				});
+			}
+		};
+		//Envia a requisição
+		$.ajax(params);
+	},
+	renderActivity : function(data) {
+		var activity = "";
+		whatoodo.home.listLength = data['activity'].length - 1;
+		whatoodo.home.listCurrent = 1;
+		for( x = whatoodo.home.listLength; x > 0; x--) {
+			var item = data['activity'][x];
+			switch(item.new_type) {
+				case "Like":
+					activity += template.listItem.Like.replace("{USERID}", item.userid).replace("{IMG}", item.usp_photo).replace("{NAME}", item.usp_firstname + ' ' + item.usp_lastname).replace("{DATE}", item.date).replace("{TEXT}", item.localname).replace("{DISPLAY}", x < 5 ? "block" : "none").replace("{IID}", "box-item-" + x);
+					break;
+				case "Share":
+					activity += template.listItem.Share.replace("{USERID}", item.userid).replace("{IMG}", item.usp_photo).replace("{NAME}", item.usp_firstname + ' ' + item.usp_lastname).replace("{DATE}", item.date).replace("{TEXT}", item.localname).replace("{DISPLAY}", x < 5 ? "block" : "none").replace("{IID}", "box-item-" + x);
+					break;
+				case "Event":
+					activity += template.listItem.Event.replace("{USERID}", item.userid).replace("{IMG}", item.usp_photo).replace("{NAME}", item.usp_firstname + ' ' + item.usp_lastname).replace("{DATE}", item.date).replace("{TEXT}", item.localname).replace("{DISPLAY}", x < 5 ? "block" : "none").replace("{IID}", "box-item-" + x);
+					break;
+				default:
+					activity += template.listItem.Like.replace("{USERID}", item.userid).replace("{IMG}", item.usp_photo).replace("{NAME}", item.usp_firstname + ' ' + item.usp_lastname).replace("{DATE}", item.date).replace("{TEXT}", "whatoodo").replace("{DISPLAY}", x < 5 ? "block" : "none").replace("{IID}", "box-item-" + x);
+					break;
+			}
+			whatoodo.home.newsCache.push(item.new_id);
+		}
+		document.getElementById('box-list').innerHTML = activity;
+		$.doTimeout('animationTimer', 5000, function() {
+			whatoodo.home.startAnimationActivity();
+			return true;
+		});
+	},
+	startAnimationActivity : function() {
+		var i = whatoodo.home.listCurrent;
+
+		$('#box-item-' + i).fadeOut('slow', function() {
+			var html = $('#box-item-' + i).hide().remove().clone();
+			$('#box-list').prepend(html);
+			if((i + 4) > whatoodo.home.listLength)
+				var y = (i + 4) - whatoodo.home.listLength;
+			else
+				var y = i + 4;
+			$('#box-item-' + y).slideDown('slow');
+		});
+
+		whatoodo.home.listCurrent++;
+		if(whatoodo.home.listCurrent > whatoodo.home.listLength)
+			whatoodo.home.listCurrent = 1;
+	},
+	showTimeline : function(time, size) {
+		$('#timeline').html('<img class="loader" src="style/img/3.gif" />');
+		service.getHome(time, size, function(data) {
+			whatoodo.home.renderTimeline(time, data);
+		}, function() {
+			//alert("erro");
+		});
+		lib.events.add("timeline", "onmouseover", function(e) {
+			var value = lib.dom.attr(e.target, 'value');
+			if(value) {
+				document.getElementById('timeline-item-time0').className = "timeline-item";
+				document.getElementById('timeline-item-time1').className = "timeline-item";
+				document.getElementById('timeline-item-time2').className = "timeline-item";
+				document.getElementById('timeline-item-time3').className = "timeline-item";
+				if(document.getElementById('timeline-item-time4')) {
+					document.getElementById('timeline-item-time4').className = "timeline-item";
+				}
+				document.getElementById('timeline-item-' + value).className = "timeline-item-on";
+			}
+		});
+	},
+	renderTimeline : function(time, data) {
+		//date = new Date(data['request']['time']*1000);
+		//alert(date);
+		//data[][]
+
+		var listTimeline = "";
+		var weekday = new Array(7);
+		weekday[0] = "SUNDAY";
+		weekday[1] = "MONDAY";
+		weekday[2] = "TUESDAY";
+		weekday[3] = "WEDNESDAY";
+		weekday[4] = "THURSDAY";
+		weekday[5] = "FRIDAY";
+		weekday[6] = "SATURDAY";
+
+		var month = new Array(12);
+		month[0] = "Jan";
+		month[1] = "Feb";
+		month[2] = "Mar";
+		month[3] = "Apr";
+		month[4] = "May";
+		month[5] = "Jun";
+		month[6] = "Jul";
+		month[7] = "Aug";
+		month[8] = "Sep";
+		month[9] = "Oct";
+		month[10] = "Nov";
+		month[11] = "Dec";
+		for( x = 0; x < data['results']['count']; x++) {
+
+			var agenda = data['results']['items'][x]['agenda'];
+
+			if(time != undefined) {
+				var date = new Date(time * 1000);
+			} else {
+				var date = new Date();
+			}
+
+			date.setDate(date.getDate() + x);
+			pad(date.getMonth(), 2);
+			//var index;
+			//alert(data['timeline'].length);
+			//for(var j = 0; j < agenda.length; j++) {
+
+			//	if( typeof (agenda) != "undefined") {
+			//alert(data['timeline'][j].workday.toUpperCase());
+			//		if(agenda[j].workday.toUpperCase() == weekday[date.getDay()]) {
+			//			index = j;
+			//			break;
+			//		}
+			//	}
+			//}
+
+			var item = agenda[0];
+			listTimeline += template.componentTimeline.replace("{SEMANA}", weekday[date.getDay()]).replace("{DATE}", month[date.getMonth()] + ' ' + pad(date.getDate(), 2)).replace("{NAME}", item.name).replace("{NAME}", "places").replace("{IMG}", item.image).replace("{PLAID}", item.id).replace("{ID}", x).replace("{ID}", x).replace("{ID}", x).replace("{ID}", x).replace("{ID}", x).replace("{COUNT}", "+ " + (data['results']['items'][x]['count'] - 4)).replace("{NAME}", "PLACES").replace("{WEEKDAY}", time);
+		}
+		document.getElementById('timeline').innerHTML = listTimeline;
+		$('.other-places').click(function() {
+			lib.views.set('search', {
+				'value' : $(this).attr('weekday')
+			}, whatoodo);
+		});
+		$('.local-place').click(function() {
+			/*lib.views.set('placeprofile', {
+			 'pid' : '142'
+			 }, whatoodo);*/
+			window.location = "index.php?page=placeprofile&pid=142";
+		});
+	},
+	render : function() {
+		document.getElementById('box-login').innerHTML = template.componentLogin;
+		//document.getElementById('box-join').innerHTML = template.componentJoin;
+
+		var KEY = {
+			RETURN : 13
+		};
+
+		$('#text_recovery').keydown(function(event) {
+			if(event.keyCode == KEY.RETURN) {
+				whatoodo.recovery(document.getElementById('text_recovery').value);
+			}
+		});
+
+		$('#forget').click(function() {
+			$('#text_recovery').show();
+			$('#btnLogin').hide();
+			$('#forget').hide();
+			$('#now-login').show();
+		});
+
+		$('#now-login').click(function() {
+			$('#text_recovery').hide();
+			$('#btnLogin').show();
+			$('#forget').show();
+			$('#now-login').hide();
+		});
+
+		lib.events.add("btnLogin", "onclick", function(e) {
+			whatoodo.login(document.getElementById('text_username').value, sha1(document.getElementById('text_password').value));
+		});
+		$('#text_password').keydown(function(event) {
+			if(event.keyCode == KEY.RETURN) {
+				whatoodo.login(document.getElementById('text_username').value, sha1(document.getElementById('text_password').value));
+			}
+		});
+
+		$('#btn-joinnow').click(function() {
+			$('#new-member-dialog').show();
+		});
+	},
+	renderPhoto : function(data) {
+		var PhotoProfile = "";
+
+		var item = data['userphoto'][0];
+		PhotoProfile += template.imageProfile.replace("{IMG}", item.usp_photo).replace("{NAME}", item.usp_firstname + ' ' + item.usp_lastname);
+		//alert("teste");
+		document.getElementById('box-img-profile').innerHTML = PhotoProfile;
+
+	},
+	renderFeed : function(data) {
+		var Feed = "";
+
+		var tamanho = data['feed'].length;
+		//Comment Template
+		for( x = 0; x < tamanho; x++) {
+			var item = data['feed'][x];
+			switch(item.type) {
+				case "Like":
+					Feed += template.listItem.Like.replace("{USERID}", item.userid).replace("{IMG}", item.userphoto).replace("{NAME}", item.username).replace("{DATE}", item.date).replace("{TEXT}", item.userlocal);
+					break;
+				case "Share":
+					Feed += template.listItem.Share.replace("{USERID}", item.userid).replace("{IMG}", item.userphoto).replace("{NAME}", item.username).replace("{DATE}", item.date).replace("{TEXT}", item.userlocal);
+					break;
+				case "Event":
+					Feed += template.listItem.Event.replace("{USERID}", item.userid).replace("{IMG}", item.userphoto).replace("{NAME}", item.username).replace("{DATE}", item.date).replace("{TEXT}", item.userlocal);
+					break;
+				default:
+					Feed += template.listItem.Like.replace("{USERID}", item.userid).replace("{IMG}", item.userphoto).replace("{NAME}", item.username).replace("{DATE}", item.date).replace("{TEXT}", "Whatoodo");
+					break;
+			}
+		}
+
+		document.getElementById('box-list').innerHTML = template.middleComponent.replace("{COMMENT}", "Comment").replace("{SETTINGS}", "Settings").replace("{PHOTO}", "Photo").replace("{FRIENDS}", "Friends").replace("{EVENTS}", "Events").replace("{PLACES}", "Places");
+		document.getElementById('area-comment').innerHTML = Feed
+
+		$('.settings-label').css("background", "none");
+		$('.photo-label').css("background", "none");
+		$('.friends-label').css("background", "none");
+		$('.events-label').css("background", "none");
+		$('.places-label').css("background", "none");
+		$('.middle-area-settings').hide();
+		$('.middle-area-photo').hide();
+		$('.middle-area-friends').hide();
+		$('.middle-area-events').hide();
+		$('.middle-area-places').hide();
+
+		$('.comment-label').click(function() {
+			$('.comment-label').css("background", "#5b779c");
+			$('.settings-label').css("background", "none");
+			$('.photo-label').css("background", "none");
+			$('.friends-label').css("background", "none");
+			$('.events-label').css("background", "none");
+			$('.places-label').css("background", "none");
+			$('.middle-area-comment').show();
+			$('.middle-area-settings').hide();
+			$('.middle-area-photo').hide();
+			$('.middle-area-friends').hide();
+			$('.middle-area-events').hide();
+			$('.middle-area-places').hide();
+			document.getElementById('area-comment').innerHTML = Feed;
+		});
+
+		$('.settings-label').click(function() {
+			$('.comment-label').css("background", "none");
+			$('.settings-label').css("background", "#5b779c");
+			$('.photo-label').css("background", "none");
+			$('.friends-label').css("background", "none");
+			$('.events-label').css("background", "none");
+			$('.places-label').css("background", "none");
+			$('.middle-area-comment').hide();
+			$('.middle-area-settings').show();
+			$('.middle-area-photo').hide();
+			$('.middle-area-friends').hide();
+			$('.middle-area-events').hide();
+			$('.middle-area-places').hide();
+
+			//Settings Template
+			var params = {
+				url : service.getBaseUrl() + "settings.php",
+				global : false,
+				type : "POST",
+				dataType : "json",
+				async : true,
+				data : {
+
+				},
+				success : function(data) {
+					var Settings = "";
+					var tamanho = data['useraccount'].length;
+					for( x = 0; x < tamanho; x++) {
+						var item = data['useraccount'][x];
+						Settings += template.componentAccountSetting.replace("{USERNAMELABEL}", "Username").replace("{USERNAME}", item.username).replace("{PASSLABEL}", "Password").replace("{EMAILLABEL}", "E-mail").replace("{EMAIL}", item.email);
+					}
+					document.getElementById('area-settings').innerHTML = Settings;
+					$('#edit-password').click(function() {
+						whatoodo.accountsettings.passChange();
+					});
+					$('#edit-email').click(function() {
+						whatoodo.accountsettings.emailChange();
+					});
+				},
+				error : function(data) {
+					wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+				}
+			};
+			$.ajax(params);
+		});
+
+		$('.photo-label').click(function() {
+			$('.comment-label').css("background", "none");
+			$('.settings-label').css("background", "none");
+			$('.photo-label').css("background", "#5b779c");
+			$('.friends-label').css("background", "none");
+			$('.events-label').css("background", "none");
+			$('.places-label').css("background", "none");
+			$('.middle-area-comment').hide();
+			$('.middle-area-settings').hide();
+			$('.middle-area-photo').show();
+			$('.middle-area-friends').hide();
+			$('.middle-area-events').hide();
+			$('.middle-area-places').hide();
+
+			//Change Photo
+			var params = {
+				url : service.getBaseUrl() + "photoprofile.php",
+				global : false,
+				type : "POST",
+				dataType : "json",
+				async : true,
+				data : {
+
+				},
+				success : function(data) {
+					var PhotoChange = "";
+
+					for( x = 0; x < 1; x++) {
+						var item = data['userphoto'][x];
+						PhotoChange += template.componentChangePhoto.replace("{PROFILETITLE}", "Change your photo").replace("{WARNING}", "Select an image no bigger than 250kb. For better visualization we recommend a vertical photo around 130px X 180px");
+					}
+					document.getElementById('area-photo').innerHTML = PhotoChange;
+				},
+				error : function(data) {
+					wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+				}
+			};
+			$.ajax(params);
+		});
+
+		$('.friends-label').click(function() {
+			$('.comment-label').css("background", "none");
+			$('.settings-label').css("background", "none");
+			$('.photo-label').css("background", "none");
+			$('.friends-label').css("background", "#5b779c");
+			$('.events-label').css("background", "none");
+			$('.places-label').css("background", "none");
+			$('.middle-area-comment').hide();
+			$('.middle-area-settings').hide();
+			$('.middle-area-photo').hide();
+			$('.middle-area-friends').show();
+			$('.middle-area-events').hide();
+			$('.middle-area-places').hide();
+
+			//Friends
+			var params = {
+				url : service.getBaseUrl() + "userfriends.php",
+				global : false,
+				type : "POST",
+				dataType : "json",
+				async : true,
+				data : {
+
+				},
+				success : function(data) {
+					if(data['userfriends'] != null) {
+						var FriendPhoto = template.componentEditFriend.replace("{TEXT}", "Friend's Name").replace("{BUTTONSEARCH}", "Search").replace("{BUTTONREQUEST}", "Requests").replace("{BUTTONEDIT}", "Edit");
+					} else {
+						var FriendPhoto = template.componentEditFriend.replace("{BUTTONREQUEST}", "Requests");
+					}
+
+					if(data['userfriends'] != null) {
+
+						var tamanho = data['userfriends'].length;
+
+						for( x = 0; x < tamanho; x++) {
+							var item = data['userfriends'][x];
+							FriendPhoto += template.componentImageFriend.replace("{IMG}", item.usp_photo).replace("{ID}", item.acc_id);
+						}
+					}
+					document.getElementById('area-friends').innerHTML = FriendPhoto;
+
+					$('.search-button').click(function() {
+						var params = {
+							url : service.getBaseUrl() + "searchfriend.php",
+							global : false,
+							type : "POST",
+							dataType : "json",
+							async : true,
+							data : {
+								search : $('#search-friends').val()
+							},
+							success : function(data) {
+								var tamanho = data['FriendsSearch'].length;
+								var FriendPhoto = template.componentEditFriend.replace("{TEXT}", "Friend's Name").replace("{BUTTONSEARCH}", "Search").replace("{BUTTONREQUEST}", "Requests").replace("{BUTTONEDIT}", "Edit");
+
+								for( x = 0; x < tamanho; x++) {
+									var item = data['FriendsSearch'][x];
+									FriendPhoto += template.componentImageFriend.replace("{IMG}", item.usp_photo).replace("{ID}", item.acc_id);
+								}
+
+								document.getElementById('area-friends').innerHTML = FriendPhoto;
+							},
+							error : function(data) {
+								wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+							}
+						};
+						$.ajax(params);
+					});
+
+					$('.request-button').click(function() {
+						var params = {
+							url : service.getBaseUrl() + "userfriends.php",
+							global : false,
+							type : "POST",
+							dataType : "json",
+							async : true,
+							data : {
+
+							},
+							success : function(data) {
+								var sizeRequest = data['requestFriend'].length;
+								var FriendPhoto = template.componentEditFriend.replace("{TEXT}", "Friend's Name").replace("{BUTTONSEARCH}", "Search").replace("{BUTTONREQUEST}", "Requests").replace("{BUTTONEDIT}", "Edit");
+								if(sizeRequest >= 1) {
+									for( x = 0; x < sizeRequest; x++) {
+										var item = data['requestFriend'][x];
+										FriendPhoto += template.componentRequestFriend.replace("{FRIENDIMAGE}", item.usp_photo).replace("{NAME}", item.usp_firstname + ' ' + item.usp_lastname).replace("{MESSAGE}", item.acc_message).replace("{FRIENDID}", item.acc_id).replace("{IDFRIEND}", item.acc_id);
+									}
+								}
+								document.getElementById('area-friends').innerHTML = FriendPhoto;
+
+								$('.bt-request-confirm').click(function() {
+									var objEvent = this;
+									var params = {
+										url : service.getBaseUrl() + "acceptRequest.php",
+										global : false,
+										type : "POST",
+										dataType : "json",
+										async : true,
+										data : {
+											accid : $(this).attr('accid')
+										},
+										success : function(data) {
+											if(data.status == "OK") {
+												$(objEvent).parent().parent().fadeOut();
+											} else {
+												if(data.errormsg != "") {
+													wtd.alert.showMessage(data.errormsg);
+												} else {
+													wtd.alert.showMessage("An error has occurred. Please try again.");
+												}
+											}
+										},
+										error : function(data) {
+											wtd.alert.showMessage("An error has occurred. Please try again.");
+										}
+									};
+									$.ajax(params);
+								});
+
+								$('.bt-request-cancel').click(function() {
+									var objEvent = this;
+									var params = {
+										url : service.getBaseUrl() + "rejectRequest.php",
+										global : false,
+										type : "POST",
+										dataType : "json",
+										async : true,
+										data : {
+											accid : $(this).attr('accid')
+										},
+										success : function(data) {
+											if(data.status == "OK") {
+												$(objEvent).parent().parent().fadeOut();
+											} else {
+												if(data.errormsg != "") {
+													wtd.alert.showMessage(data.errormsg);
+												} else {
+													wtd.alert.showMessage("An error has occurred. Please try again.");
+												}
+											}
+										},
+										error : function(data) {
+											wtd.alert.showMessage("An error has occurred. Please try again.");
+										}
+									};
+									$.ajax(params);
+								});
+							},
+							error : function(data) {
+								wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+							}
+						};
+						$.ajax(params);
+					});
+				},
+				error : function(data) {
+					wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+				}
+			};
+			$.ajax(params);
+		});
+
+		$('.events-label').click(function() {
+			$('.comment-label').css("background", "none");
+			$('.settings-label').css("background", "none");
+			$('.photo-label').css("background", "none");
+			$('.friends-label').css("background", "none");
+			$('.events-label').css("background", "#5b779c");
+			$('.places-label').css("background", "none");
+			$('.middle-area-comment').hide();
+			$('.middle-area-settings').hide();
+			$('.middle-area-photo').hide();
+			$('.middle-area-friends').hide();
+			$('.middle-area-events').show();
+			$('.middle-area-places').hide();
+
+			//EventsPages
+			var params = {
+				url : service.getBaseUrl() + "events.php",
+				global : false,
+				type : "POST",
+				dataType : "json",
+				async : true,
+				data : {
+
+				},
+				success : function(data) {
+					var listEvent = "";
+
+					var tamanho = data['event'].length;
+
+					for( x = 0; x < tamanho; x++) {
+						var item = data['event'][x];
+						listEvent += template.listItemEvent.replace("{IMG}", item.eve_photo).replace("{EVEID}", item.eve_id).replace("{NAME}", item.eve_name).replace("{IDEVE}", item.eve_id).replace("{DATE}", item.eve_when).replace("{TEXT}", item.eve_info);
+					}
+					document.getElementById('area-events').innerHTML = listEvent;
+				},
+				error : function(data) {
+					wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+				}
+			};
+			$.ajax(params);
+		});
+
+		$('.places-label').click(function() {
+			$('.comment-label').css("background", "none");
+			$('.settings-label').css("background", "none");
+			$('.photo-label').css("background", "none");
+			$('.friends-label').css("background", "none");
+			$('.events-label').css("background", "none");
+			$('.places-label').css("background", "#5b779c");
+			$('.middle-area-comment').hide();
+			$('.middle-area-settings').hide();
+			$('.middle-area-photo').hide();
+			$('.middle-area-friends').hide();
+			$('.middle-area-events').hide();
+			$('.middle-area-places').show();
+
+			//renderPages
+			var params = {
+				url : service.getBaseUrl() + "useaspage.php",
+				global : false,
+				type : "POST",
+				dataType : "json",
+				async : true,
+				data : {
+
+				},
+				success : function(data) {
+					var listEvent = "";
+
+					var tamanho = data['placesadmin'].length;
+
+					for( x = 0; x < tamanho; x++) {
+						var item = data['placesadmin'][x];
+						if(item.pla_status == 'Active') {
+							listEvent += template.listuseAsPage.replace("{IMG}", item.pla_photo).replace("{EVEID}", item.pla_id).replace("{NAME}", item.pla_name).replace("{IDEVE}", item.pla_id).replace("{DATE}", item.pla_state).replace("{TEXT}", item.pla_description).replace("{Status}", "Inactive this place").replace("{PLACEID}", item.pla_id);
+						} else {
+							listEvent += template.listuseAsPage.replace("{IMG}", item.pla_photo).replace("{EVEID}", item.pla_id).replace("{NAME}", item.pla_name).replace("{IDEVE}", item.pla_id).replace("{DATE}", item.pla_state).replace("{TEXT}", item.pla_description).replace("{Status}", "Active this place").replace("{PLACEID}", item.pla_id);
+						}
+					}
+					document.getElementById('area-place').innerHTML = listEvent;
+					$('.idplace').click(function() {
+						var params = {
+							url : service.getBaseUrl() + "statusPlace.php",
+							global : false,
+							type : "POST",
+							dataType : "json",
+							async : true,
+							data : {
+								"place" : $(this).attr('pla_id')
+							},
+							success : function(data) {
+								history.go(0);
+								wtd.alert.showMessage("Place status was changed");
+							},
+							error : function(data) {
+								wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+							}
+						};
+						$.ajax(params);
+					});
+				},
+				error : function(data) {
+					wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+				}
+			};
+			$.ajax(params);
+
+		});
+	},
+	passChange : function() {
+		$('#edit-password').html("Cancel").unbind('click').click(function() {
+			$('#edit-password').siblings(".editprofile-input").html(whatoodo.accountsettings.changePassMark);
+			$('#edit-password').html("Edit").unbind('click').click(function() {
+				whatoodo.accountsettings.passChange();
+			});
+		});
+		$('#edit-password').siblings(".editprofile-input").html('<div class="editaccount-miniform"><form id="change-password" method="post" action="javascript:void(0)"><input type="password" name="oldpass" /><p><input type="password" name="pass1" /><p><input type="password" name="pass2" /><div class="editprofile-buttons"><input type="submit" class="button" value="Change Password" /></div></form></div>');
+		$('#change-password').validate({
+			rules : {
+				oldpass : "required",
+				pass1 : "required",
+				pass2 : {
+					required : true,
+					equalTo : '[name|="pass1"]'
+				}
+			},
+			messages : {
+				oldpass : "Enter your old password",
+				pass1 : "Enter your new password",
+				pass2 : {
+					required : "Confirm your password",
+					equalTo : "Passwords doesn't match"
+				}
+			},
+			submitHandler : function(form) {
+				var params = {
+					url : service.getBaseUrl() + "editAccount.php",
+					global : false,
+					type : "POST",
+					data : {
+						type : "Password",
+						oldpass : form.oldpass.value,
+						newpass : form.pass1.value
+					},
+					dataType : "json",
+					async : true,
+					success : function(data) {
+						if(data.status == "OK") {
+							wtd.alert.showMessage("Password changed successfully!");
+							$('#edit-password').click();
+						} else if(data.status == "ERROR" && data.errormsg)
+							wtd.alert.showMessage(data.errormsg);
+						else
+							wtd.alert.showMessage("We got an internal service error, please try again later.");
+					},
+					error : function(data) {
+						wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+					}
+				};
+				$.ajax(params);
+				return false;
+			}
+		});
+		$('#change-password').valid();
+	},
+	emailChange : function() {
+		$('#edit-email').html("Cancel").unbind('click').click(function() {
+			$('#edit-email').siblings(".editprofile-input").html(whatoodo.accountsettings.changeEmailMark);
+			$('#edit-email').html("Edit").unbind('click').click(function() {
+				whatoodo.accountsettings.emailChange();
+			});
+		});
+		$('#edit-email').siblings(".editprofile-input").html('<div class="editaccount-miniform"><form id="change-name" method="post" action="javascript:void(0)"><input type="text" name="email" /><div class="editprofile-buttons"><input type="submit" class="button" value="Change Email" /></div></form></div>');
+		$('#change-name').validate({
+			rules : {
+				email : {
+					required : true,
+					email : true
+				}
+			},
+			messages : {
+				email : {
+					email : "Invalid e-mail!"
+				}
+			},
+			submitHandler : function(form) {
+				var params = {
+					url : service.getBaseUrl() + "editAccount.php",
+					global : false,
+					type : "POST",
+					data : {
+						type : "Email",
+						email : form.email.value
+					},
+					dataType : "json",
+					async : true,
+					success : function(data) {
+						if(data.status == "OK") {
+							wtd.alert.showMessage("Your request for e-mail change has been sent. You must validate your e-mail before effectively use it.");
+							$('#edit-email').click();
+						} else if(data.status == "ERROR" && data.errormsg)
+							wtd.alert.showMessage(data.errormsg);
+						else
+							wtd.alert.showMessage("We got an internal service error, please try again later.");
+					},
+					error : function(data) {
+						wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+					}
+				};
+				$.ajax(params);
+				//return false;
+			}
+		});
+	},
+	/*renderUserfriends : function(data) {
+	 var FriendPhoto = "";
+
+	 var tamanho = data['userfriends'].length;
+
+	 for( x = 0; x < tamanho; x++) {
+	 var item = data['userfriends'][x];
+	 FriendPhoto += template.imageFriends.replace("{IMG}", item.usp_photo).replace("{ID}", item.acc_id);
+	 }
+	 document.getElementById('box-img-friends').innerHTML = template.componentImgFriends.replace("{LIST_IMG}", FriendPhoto);
+
+	 },*/
+	renderSuggestionsFriends : function() {
+
+		var params = {
+			url : service.getBaseUrl() + "getNotifications.php",
+			global : false,
+			type : "POST",
+			dataType : "json",
+			async : true,
+			data : {
+
+			},
+			success : function(data) {
+				document.getElementById('box-menu-profile').innerHTML = template.componentMenuProfile.replace("{USERID}", data['uid']).replace("{PROFILE}", i18n[whatoodo.lang].TEXT_PROFILE).replace("{EVENTS}", i18n[whatoodo.lang].TEXT_EVENTS).replace("{FRIENDS}", i18n[whatoodo.lang].TEXT_FRIENDS).replace("{COUNT}", ' + ' + data['pendingEvents']).replace("{COUNTFR}", ' + ' + data['pendingFriends']);
+				$('.events').click(function() {
+					$('.comment-label').css("background", "none");
+					$('.settings-label').css("background", "none");
+					$('.photo-label').css("background", "none");
+					$('.friends-label').css("background", "none");
+					$('.events-label').css("background", "#5b779c");
+					$('.places-label').css("background", "none");
+					$('.middle-area-comment').hide();
+					$('.middle-area-settings').hide();
+					$('.middle-area-photo').hide();
+					$('.middle-area-friends').hide();
+					$('.middle-area-events').show();
+					$('.middle-area-places').hide();
+
+					//EventsPages
+					var params = {
+						url : service.getBaseUrl() + "events.php",
+						global : false,
+						type : "POST",
+						dataType : "json",
+						async : true,
+						data : {
+
+						},
+						success : function(data) {
+							var listEvent = "";
+
+							var tamanho = data['event'].length;
+
+							for( x = 0; x < tamanho; x++) {
+								var item = data['event'][x];
+								listEvent += template.listItemEvent.replace("{IMG}", item.eve_photo).replace("{EVEID}", item.eve_id).replace("{NAME}", item.eve_name).replace("{IDEVE}", item.eve_id).replace("{DATE}", item.eve_when).replace("{TEXT}", item.eve_info);
+							}
+							document.getElementById('area-events').innerHTML = listEvent;
+						},
+						error : function(data) {
+							wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+						}
+					};
+					$.ajax(params);
+				});
+				$('.option-name').click(function() {
+					$(this).siblings('.profile-submenu').toggle();
+				});
+				$('#preferences-option').click(function(){
+					whatoodo.getPage("preferences");
+					//lib.views.set('preferences', {}, whatoodo);
+				});
+				$('.friends').click(function() {
+					$('.comment-label').css("background", "none");
+					$('.settings-label').css("background", "none");
+					$('.photo-label').css("background", "none");
+					$('.friends-label').css("background", "#5b779c");
+					$('.events-label').css("background", "none");
+					$('.places-label').css("background", "none");
+					$('.middle-area-comment').hide();
+					$('.middle-area-settings').hide();
+					$('.middle-area-photo').hide();
+					$('.middle-area-friends').show();
+					$('.middle-area-events').hide();
+					$('.middle-area-places').hide();
+
+					//Friends
+					var params = {
+						url : service.getBaseUrl() + "userfriends.php",
+						global : false,
+						type : "POST",
+						dataType : "json",
+						async : true,
+						data : {
+
+						},
+						success : function(data) {
+							if(data['userfriends'] != null) {
+								var FriendPhoto = template.componentEditFriend.replace("{TEXT}", "Friend's Name").replace("{BUTTONSEARCH}", "Search").replace("{BUTTONREQUEST}", "Requests").replace("{BUTTONEDIT}", "Edit");
+							} else {
+								var FriendPhoto = template.componentEditFriend.replace("{BUTTONREQUEST}", "Requests");
+							}
+
+							if(data['userfriends'] != null) {
+
+								var tamanho = data['userfriends'].length;
+
+								for( x = 0; x < tamanho; x++) {
+									var item = data['userfriends'][x];
+									FriendPhoto += template.componentImageFriend.replace("{IMG}", item.usp_photo).replace("{ID}", item.acc_id);
+								}
+							}
+							document.getElementById('area-friends').innerHTML = FriendPhoto;
+
+							$('.search-button').click(function() {
+								var params = {
+									url : service.getBaseUrl() + "searchfriend.php",
+									global : false,
+									type : "POST",
+									dataType : "json",
+									async : true,
+									data : {
+										search : $('#search-friends').val()
+									},
+									success : function(data) {
+										var tamanho = data['FriendsSearch'].length;
+										var FriendPhoto = template.componentEditFriend.replace("{TEXT}", "Friend's Name").replace("{BUTTONSEARCH}", "Search").replace("{BUTTONREQUEST}", "Requests").replace("{BUTTONEDIT}", "Edit");
+
+										for( x = 0; x < tamanho; x++) {
+											var item = data['FriendsSearch'][x];
+											FriendPhoto += template.componentImageFriend.replace("{IMG}", item.usp_photo).replace("{ID}", item.acc_id);
+										}
+
+										document.getElementById('area-friends').innerHTML = FriendPhoto;
+									},
+									error : function(data) {
+										wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+									}
+								};
+								$.ajax(params);
+							});
+
+							$('.request-button').click(function() {
+								var params = {
+									url : service.getBaseUrl() + "userfriends.php",
+									global : false,
+									type : "POST",
+									dataType : "json",
+									async : true,
+									data : {
+
+									},
+									success : function(data) {
+										var sizeRequest = data['requestFriend'].length;
+										var FriendPhoto = template.componentEditFriend.replace("{TEXT}", "Friend's Name").replace("{BUTTONSEARCH}", "Search").replace("{BUTTONREQUEST}", "Requests").replace("{BUTTONEDIT}", "Edit");
+										if(sizeRequest >= 1) {
+											for( x = 0; x < sizeRequest; x++) {
+												var item = data['requestFriend'][x];
+												FriendPhoto += template.componentRequestFriend.replace("{FRIENDIMAGE}", item.usp_photo).replace("{NAME}", item.usp_firstname + ' ' + item.usp_lastname).replace("{MESSAGE}", item.acc_message).replace("{FRIENDID}", item.acc_id).replace("{IDFRIEND}", item.acc_id);
+											}
+										}
+										document.getElementById('area-friends').innerHTML = FriendPhoto;
+
+										$('.bt-request-confirm').click(function() {
+											var objEvent = this;
+											var params = {
+												url : service.getBaseUrl() + "acceptRequest.php",
+												global : false,
+												type : "POST",
+												dataType : "json",
+												async : true,
+												data : {
+													accid : $(this).attr('accid')
+												},
+												success : function(data) {
+													if(data.status == "OK") {
+														$(objEvent).parent().parent().fadeOut();
+													} else {
+														if(data.errormsg != "") {
+															wtd.alert.showMessage(data.errormsg);
+														} else {
+															wtd.alert.showMessage("An error has occurred. Please try again.");
+														}
+													}
+												},
+												error : function(data) {
+													wtd.alert.showMessage("An error has occurred. Please try again.");
+												}
+											};
+											$.ajax(params);
+										});
+
+										$('.bt-request-cancel').click(function() {
+											var objEvent = this;
+											var params = {
+												url : service.getBaseUrl() + "rejectRequest.php",
+												global : false,
+												type : "POST",
+												dataType : "json",
+												async : true,
+												data : {
+													accid : $(this).attr('accid')
+												},
+												success : function(data) {
+													if(data.status == "OK") {
+														$(objEvent).parent().parent().fadeOut();
+													} else {
+														if(data.errormsg != "") {
+															wtd.alert.showMessage(data.errormsg);
+														} else {
+															wtd.alert.showMessage("An error has occurred. Please try again.");
+														}
+													}
+												},
+												error : function(data) {
+													wtd.alert.showMessage("An error has occurred. Please try again.");
+												}
+											};
+											$.ajax(params);
+										});
+									},
+									error : function(data) {
+										wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+									}
+								};
+								$.ajax(params);
+							});
+						},
+						error : function(data) {
+							wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+						}
+					};
+					$.ajax(params);
+				});
+			},
+			error : function(data) {
+				wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+			}
+		};
+		$.ajax(params);
+
+		
+
+		//document.getElementById('box-advertising').innerHTML = template.componentAdvertising.replace("{ADV}", template.advertising.replace("{IMG}", "style/img/wild.jpg"));
+		$('.add').click(function() {
+			$('#add-friend-confirm').show();
+			var params = {
+				url : service.getBaseUrl() + "getNewFriendData.php",
+				global : false,
+				type : "POST",
+				dataType : "json",
+				async : true,
+				data : {
+					pid : $('#friendid').val()
+				},
+				success : function(data) {
+					var tamanho = data['friendsData'].length;
+					var users = "";
+					for( x = 0; x < tamanho; x++) {
+						var item = data['friendsData'][x];
+						users += "<div class='picture-mutual'>" + "<img id='newfriend-mutual-friend' src=" + item.usp_photo + ">" + "</div>";
+
+					}
+					//Sex is very good
+					var sex = "";
+					if(data['usp_gender'] == "M") {
+						sex = "Male";
+					} else {
+						sex = "Female";
+					}
+					$('#add-friend-confirm').children().html('<div class="up">' + 'Add Friend' + '</div>' + '<div class="friendPicture-Add">' + '<img src=' + data['usp_photo'] + '>' + '<div class="name">' + data['usp_firstname'] + ' ' + data['usp_lastname'] + '</div>' + '<div class="sex">' + sex + ', ' + data['usp_city'] + '</div>' + '</div>' + '<div class="personal-message">' + users + '<label>Personal Message</label>' + '<textarea id="personal-message"></textarea>' + '</div>' + '<div class="bts-confirm">' + '<div class="button red bt-request-cancel" id="bt-cancel-friend">Cancel</div>' + '<div class="button bt-request-confirm" id="bt-add-friend">Add Friend</div>' + '</div>');
+					$('#bt-cancel-friend').click(function() {
+						$('#add-friend-confirm').hide();
+					});
+					$('#bt-add-friend').click(function() {
+						var personal_msg = $('#personal-message').val();
+						$.ajax({
+							type : "POST",
+							url : service.getBaseUrl() + "addFriend.php",
+							dataType : "json",
+							data : {
+								friendId : $('#friendid').val(),
+								msg : personal_msg
+							},
+							success : function(data) {
+								if(data.status == "OK") {
+									$('#add-friend-confirm').hide();
+									wtd.alert.showMessage('Friend request sent.');
+								} else {
+									if(data.errormsg) {
+										wtd.alert.showMessage(data.errormsg);
+									} else {
+										wtd.alert.showMessage("An error has occurred. Please try again.");
+									}
+								}
+							},
+							error : function(data) {
+								wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+							}
+						});
+					});
+				},
+				error : function(data) {
+					wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+				}
+			};
+			$.ajax(params);
+		});
+	},
+	renderSuggestion : function() {
+
+		var suggestionHTML = "";
+		if(whatoodo.home.cache['status'] != 'NOSUGGESTIONS' && whatoodo.home.cache.length != 0) {
+			var data = whatoodo.home.cache.splice(0, 1);
+			data = data[0];
+			suggestionHTML = template.suggestions.replace("{FRIENDID}", data['acc_id']).replace("{IMG}", data['usp_photo']).replace("{FRIENDID}", data['acc_id']).replace("{NAME}", data['usp_firstname'] + " " + data['usp_lastname']).replace("{TEXT}", "mutual friends").replace("{MUTUALFRIENDS}", data['mutual_friends']).replace("{ACTIONLINK}", data['acc_id']).replace("{ACTION}", data['action']);
+			document.getElementById('box-suggestions').innerHTML = template.componentSuggestions.replace("{SUGG}", suggestionHTML);
+			//$('#suggestion-'+i).children('.suggestions-message').hide();
+			$('#suggestion-close').click(function() {
+
+				//$('#suggestion-'+i).fadeOut('fast', function() {
+				//$('#suggestion-'+i).html('<div class="suggestions-message"></div>');
+				//$('#suggestion-'+i).show();
+				whatoodo.home.renderSuggestion();
+				//});
+			});
+			//$("#suggestion-close").mouseover(function() {
+			//	$("#suggestion-close").css("background-color", "yellow");
+			//});
+			$('.add').click(function() {
+				$('#add-friend-confirm').show();
+				var params = {
+					url : service.getBaseUrl() + "getNewFriendData.php",
+					global : false,
+					type : "POST",
+					dataType : "json",
+					async : true,
+					data : {
+						pid : $('#friendid').val()
+					},
+					success : function(data) {
+						var tamanho = data['friendsData'].length;
+						var users = "";
+						for( x = 0; x < tamanho; x++) {
+							var item = data['friendsData'][x];
+							users += "<div class='picture-mutual'>" + "<img id='newfriend-mutual-friend' src=" + item.usp_photo + ">" + "</div>";
+
+						}
+						//Sex is very good
+						var sex = "";
+						if(data['usp_gender'] == "M") {
+							sex = "Male";
+						} else {
+							sex = "Female";
+						}
+						$('#add-friend-confirm').children().html('<div class="up">' + 'Add Friend' + '</div>' + '<div class="friendPicture-Add">' + '<img src=' + data['usp_photo'] + '>' + '<div class="name">' + data['usp_firstname'] + ' ' + data['usp_lastname'] + '</div>' + '<div class="sex">' + sex + ', ' + data['usp_city'] + '</div>' + '</div>' + '<div class="personal-message">' + users + '<label>Personal Message</label>' + '<textarea id="personal-message"></textarea>' + '</div>' + '<div class="bts-confirm">' + '<div class="button red bt-request-cancel" id="bt-cancel-friend">Cancel</div>' + '<div class="button bt-request-confirm" id="bt-add-friend">Add Friend</div>' + '</div>');
+						$('#bt-cancel-friend').click(function() {
+							$('#add-friend-confirm').hide();
+						});
+						$('#bt-add-friend').click(function() {
+							var personal_msg = $('#personal-message').val();
+							$.ajax({
+								type : "POST",
+								url : service.getBaseUrl() + "addFriend.php",
+								dataType : "json",
+								data : {
+									friendId : $('#friendid').val(),
+									msg : personal_msg
+								},
+								success : function(data) {
+									if(data.status == "OK") {
+										$('#add-friend-confirm').hide();
+										wtd.alert.showMessage('Friend request sent.');
+									} else {
+										if(data.errormsg) {
+											wtd.alert.showMessage(data.errormsg);
+										} else {
+											wtd.alert.showMessage("An error has occurred. Please try again.");
+										}
+									}
+								},
+								error : function(data) {
+									wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+								}
+							});
+						});
+					},
+					error : function(data) {
+						wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+					}
+				};
+				$.ajax(params);
+			});
+		} else {
+			var HTML = '<div class="suggestions-message">No suggestions for now!</div>';
+			suggestionHTML = template.componentSuggestions.replace("{SUGG}", HTML)
+			document.getElementById('box-suggestions').innerHTML = suggestionHTML;
+			$('#box-suggestions span:last').hide();
+			//$('#suggestion-'+i).html('<div class="suggestions-message">No suggestions for now! Please try again later.</div>');
+		}
+	},
+	destroy : function() {
+	}
+};
+window.whatoodo = whatoodo;

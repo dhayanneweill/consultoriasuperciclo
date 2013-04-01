@@ -1,0 +1,265 @@
+var service = window.service || {};
+
+//var BASE_URL = 'http://localhost/rest_api/v1/';
+//var BASE_URL = 'http://localhost/wtd/rest_api/v1/';
+var BASE_URL = 'http://localhost/wtd/wtd/rest_api/v1/';
+//var BASE_URL = 'http://localhost/wtd/rest_api/v1/';
+//var BASE_URL = 'http://www.whatoodo.com/rest_api/v1/';
+
+
+var URLS = {
+	'locationIp': 'location/ip.php',
+	'locationWeather': 'location/weather.php',
+	'search': 'search.php',
+	'home': 'content/agendas.php',
+	'activity': 'activity.php',
+	'photoprofile': 'photoprofile.php',
+	'userfriends': 'userfriends.php',
+	'feed': 'feed.php',
+	'register':'register.php',
+	'getpreferences':'getpreferences.php',
+	'events':'events.php',
+	'cityinfo':'cityinfo.php',
+	'timeline':'timeline.php',
+	'getsuggestion':'getsuggestions.php',
+	'useaspage':'useaspage.php',
+	'settings': 'settings.php',
+	'getaddplace':'getaddplace.php',
+	'getplaceinfo':'getPlaceInfo'
+};
+
+service = {
+	getBaseUrl: function() {
+		return BASE_URL;
+	},
+	getUrl: function(id) {
+		return BASE_URL + URLS[id];
+	},
+	getLocationUrl: function() {
+		return 'coordinates='+whatoodo.location.latitude+','+whatoodo.location.longitude;
+	},
+	getCoordinates: function() {
+		return whatoodo.location.latitude+','+whatoodo.location.longitude;
+	},
+	search: function(q, page, successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('search');
+		instance.call(url, 'GET', false,
+		{
+			'q': q,
+			'coordinates': instance.getCoordinates(),
+			'size': 10,
+			'offset': (page*10)
+		},
+		successCallback, errorCallback, false, false);
+	},
+	getLocationData: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('locationIp');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	getWeatherData: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('locationWeather');
+		instance.call(url, 'GET', false,
+		{
+			'coordinates': instance.getCoordinates(),
+		},
+		successCallback, errorCallback, false, false);
+	},
+	getEvents: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('events');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	GetAccountSettings:function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('settings');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	}, 
+	getPageadmin: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('useaspage');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	getCity: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('cityinfo');
+		instance.call(url, 'GET', false,
+		{
+			'city': whatoodo.location.city,
+			'temp': whatoodo.location.weather.tempC
+		},
+		successCallback, errorCallback, false, false);
+	},
+	getHome: function(time, size, successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('home');
+		instance.call(url, 'GET', false, 
+		{
+			'from': time,
+			'size': size,
+			'coordinates': instance.getCoordinates(),
+		},
+		successCallback, errorCallback, false, false);
+	},
+	getActivity: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('activity');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	getTimeline: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('timeline');
+		instance.call(url, 'GET', false, 
+		{
+			'city': whatoodo.location.city
+		},
+		successCallback, errorCallback, false, false);
+	},
+	getUserTimeline: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('timeline');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	getPhotoprofile: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('photoprofile');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	getUserfriends: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('userfriends');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	getFeed: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('feed');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	getRegister: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('register');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	getPreferences: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('getpreferences');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	getSuggestion: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('getsuggestion');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	getPlaceInfo: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('getplaceinfo');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	getAddplace: function(successCallback, errorCallback) {
+		var instance = service;
+		var url = instance.getUrl('getaddplace');
+		instance.call(url, 'GET', false, {},
+		successCallback, errorCallback, false, false);
+	},
+	call: function(url, method, ssl, params, success, error, makeCache, isXML) {
+		var instance = this;
+		if (ssl) {
+			url = url.replace('http', 'https');
+		}
+	
+		if (typeof isXML === 'undefined') {
+			isXML = false;
+		}
+		var sparams = instance.serialize(params, "&");
+		url += (/\/$/.test(url) || sparams.length === 0) ? sparams: '?' + sparams;
+	
+		try {
+			netscape.security.PrivilegeManager.enablePrivilege("UniversalBrowserRead");
+			netscape.security.PrivilegeManager.enablePrivilege("UniversalXPConnect");
+		} catch(e) {
+		}
+		var request = new XMLHttpRequest();
+		var timeRequest = 20000;
+		var requestDone = false,
+		isOut = false;
+		setTimeout(function() {
+			if (requestDone == false) {
+				isOut = true;
+				error.apply(instance, []);
+				return;
+			}
+		},
+		timeRequest);
+		try {
+			request.open(method, url, true);
+			request.onreadystatechange = function() {
+				try {
+					if (request.readyState == 4) {
+						requestDone = true;
+						if (request.status === 0 || (request.status >= 200 && request.status <= 206) || request.status === 304) {
+							if (request.responseText === '') {
+								if (error) {
+									error.apply(instance, []);
+								}
+								return;
+							}
+							var data = isXML ? (request.responseXML !== null ? request.responseXML: request.responseText) : eval('(' + request.responseText + ')');
+							if (makeCache && data) {
+
+							}
+							if (success) {
+								if (typeof(data.status) != 'undefined' && typeof(data.status.code) != 'undefined' && ((data.status.code < 200 || data.status.code > 206) && data.status.code !== 304))
+									error.apply(instance, []);
+								else
+									success.apply(instance, [data]);
+							}
+						}
+						else {
+							if (error && isOut == false) {
+								error.apply(instance, []);
+							}
+						}
+					}
+				} catch(e) {
+					if (error && isOut == false) {
+						error.apply(instance, []);
+					}
+				}
+			};
+			if (!isXML) {
+				request.setRequestHeader('Accept', 'application/json');
+				request.setRequestHeader('Content-Type', 'application/json; charset=utf-8');
+			}
+			request.send('');
+		} catch(er) {
+			if (error && isOut == false) {
+				error.apply(instance, []);
+			}
+		}
+	},
+
+	serialize: function(hash, glue) {
+		var str = [];
+		for (var i in hash) {
+			str.push(i + "=" + escape(hash[i]));
+		}
+		str.sort();
+		return str.join(glue || " ");
+	}
+};
+window.service = service;

@@ -1,0 +1,140 @@
+<?php 
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+        $db->print_last_error();
+}
+if (!$db->select_db()){
+        die("Banco de dados não encontrado!");
+}
+
+
+//Geolocation Processing
+if (!isset($_SESSION['ipdata'])) {
+        $ip = $_SERVER['REMOTE_ADDR'];
+        if ($ip == '127.0.0.1' || $ip == '::1' || substr($ip, 0, 7) == "192.168") {
+                $ip = '201.75.100.140';
+        }
+        $response = file_get_contents('http://api.ipinfodb.com/v2/ip_query.php?key=e456930218ef16c3210ed505e5d4164caebff99f15a4ddce7ae33c7457ab074c&output=json&timezone=false&ip='.$ip);
+        $_SESSION['ipdata'] = json_decode($response, true);
+        if ($_SESSION['ipdata']['Status'] != "OK") {
+                $_SESSION['ipdata'] = json_decode('{ "Status" : "OK", "CountryCode" : "BR", "CountryName" : "Brazil", "RegionCode" : "4", "RegionName" : "Amazonas", "City" : "Manaus", "ZipPostalCode" : "", "Latitude" : "-10", "Longitude" : "-55", "Timezone" : "0", "Gmtoffset" : "0", "Dstoffset" : "0", "TimezoneName" : "", "Isdst" : "", "Ip" : "200.160.99.67" }', true);
+        } if (!isset($_SESSION['ipdata']['City']) || $_SESSION['ipdata']['City'] == "") {
+          $_SESSION['ipdata']['City'] = "São Paulo";
+          $_SESSION['ipdata']['RegionName'] = "São Paulo";
+        }
+}
+
+
+$week_days = Array();
+$week_days[0] = "Sunday";
+$week_days[1] = "Monday";
+$week_days[2] = "Tuesday";
+$week_days[3] = "Wednesday";
+$week_days[4] = "Thursday";
+$week_days[5] = "Friday";
+$week_days[6] = "Saturday";
+
+
+/*for($i = 0; $i < 7; $i++){
+	$placeList =  $db->select("SELECT DISTINCT id, name, image, pla_city, pla_country, bus_day_work, rev_average,
+               (CASE confirmed
+                    WHEN  0 THEN 0                    
+                    WHEN  1 THEN 50                    
+                    WHEN  2 THEN 100                    
+                    WHEN  3 THEN 150                    
+                    WHEN  4 THEN 200
+                    ELSE 200
+                    END)+
+                    (CASE my_event
+                    WHEN '0' THEN 0
+                    ELSE 5000
+                    END)+
+                    (CASE placeinfo.pla_city
+                    WHEN '".$_SESSION['ipdata']['City']."' THEN 1000
+                    ELSE 0
+                    END)+
+                    (CASE bus_promoday
+                    WHEN 1 THEN 100
+                    ELSE 0
+                    END)+                    
+                    (CASE pre_rating_average
+                    WHEN 1 THEN 50
+                    WHEN 2 THEN 100
+                    WHEN 3 THEN 200
+                    WHEN 4 THEN 400
+                    WHEN 5 THEN 800
+                    ELSE 0
+                    END)+
+                    (CASE rev_average
+                    WHEN 1 THEN 50
+                    WHEN 2 THEN 100
+                    WHEN 3 THEN 200
+                    WHEN 4 THEN 400
+                    WHEN 5 THEN 800
+                    ELSE 0
+                    END)+
+                    (CASE my_review
+                    WHEN 1 THEN 25
+                    WHEN 2 THEN 50
+                    WHEN 3 THEN 100
+                    WHEN 4 THEN 200
+                    WHEN 5 THEN 400
+                    ELSE 0
+                    END) AS relevance
+  FROM (SELECT DISTINCT bus_day_work, placereview.rev_rating AS my_review, pre_rating, placeinfo.cat_id AS place_cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, my_event, pre_rating_average, rev_average, COUNT(reply_event) AS confirmed
+     FROM (SELECT DISTINCT bus_day_work, bus_day AS bus_day_promo, IFNULL(pre_rating, 0) AS pre_rating, placeinfo.cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, eve_id, IFNULL(eve_name,0) AS my_event, ROUND(IFNULL(AVG(pre_rating),0)) AS pre_rating_average, ROUND(IFNULL(AVG(rev_rating),0)) AS rev_average
+          FROM (SELECT DISTINCT bus_day AS bus_day_work, cat_id, cat_name, place.pla_id AS id, place.pla_name AS name, place.pla_photo AS image, place.pla_city, place.pla_country
+               FROM place,placetags, category, businesstime
+               WHERE place.pla_id = placetags.pla_id
+               AND place.pla_city = '".$_SESSION['ipdata']['City']."'
+               AND category.cat_name = placetags.plt_tag
+               AND businesstime.pla_id = place.pla_id
+               AND businesstime.bus_day = '".$week_days[$i]."') as placeinfo
+          LEFT JOIN userpreferences ON userpreferences.cat_id = placeinfo.cat_id AND userpreferences.acc_id = '05'
+          LEFT JOIN businesstime ON businesstime.pla_id = id AND businesstime.bus_day = '".date("l")."'
+          LEFT JOIN events ON events.pla_id = id AND events.acc_id = '05'
+          LEFT JOIN placereview ON placereview.pla_id = id
+          GROUP BY id)placeinfo
+        LEFT JOIN userevent ON userevent.id_eve = eve_id AND userevent.reply_event = 'Yes'     
+        LEFT JOIN placereview ON placereview.pla_id = id AND placereview.acc_id = '05'
+        GROUP BY id) placeinfo     
+    ORDER BY relevance DESC
+    LIMIT 4");
+ 
+	for($j = 0; $j < 4; $j++) {
+	     $place = $db->get_row($placeList);
+	     if ($place) {
+	       if ($place['image']) {
+	 	        $place['image'] = urlimage($place['image'], "places");
+	       } else {
+	        	$place['image'] = "images/camera-icon.png";
+       		}
+     	     }
+        //$placename = $place['name'];
+        $loggedtimeline .= '{"id":"'.$place['id'].'","placename":"'.$place['name'].'","placeimage":"'.$place['image'].'","placecity":"'.$place['pla_city'].'",
+                        "placecountry":"'.$place['pla_country'].'","workday":"'.$place['bus_day_work'].'","average":"'.$place['rev_average'].'",
+                        "relevance":"'.$place['relevance'].'"},';
+
+   	}
+
+ 
+	//count how many places works in the specified weekday
+  /*$placeCounter =  $db->select ("SELECT DISTINCT COUNT(*) AS pla_counter
+               FROM place, businesstime
+               WHERE place.pla_city = '".$_SESSION['ipdata']['City']."'
+               AND businesstime.pla_id = place.pla_id
+               AND businesstime.bus_day = '".$week_days[$i]."'");
+  $counter = $db->get_row($placeCounter);
+    }*/
+
+
+?>
+
+

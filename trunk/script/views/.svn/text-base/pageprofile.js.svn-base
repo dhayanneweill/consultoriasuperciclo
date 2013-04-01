@@ -1,0 +1,238 @@
+var whatoodo = window.whatoodo || {};
+//whatoodo.baseUrl = service.getBaseUrl();
+whatoodo.pageprofile = {
+	init: function(){
+		if (whatoodo.user != null && whatoodo.user != 'undefined') {
+			document.getElementById('pageprofile').innerHTML = template.content002;
+		
+			whatoodo.pageprofile.getUid(GET["uid"]);
+			whatoodo.pageprofile.renderNews(GET["uid"]);
+			whatoodo.pageprofile.renderFriendsForFriends(GET["uid"]);
+			whatoodo.pageprofile.VeryfiFriend(GET["uid"]);
+			whatoodo.pageprofile.render();
+			whatoodo.pageprofile.bind();
+		}else{
+			lib.views.set('home', {}, whatoodo);
+		}
+	},
+	VeryfiFriend: function(id){
+	    var params = {
+                	url: service.getBaseUrl()+"VerifyFriend.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                        	uid : id	
+                	},
+                        dataType: "json",
+                        async: false,
+			        success: function(data) {
+                         if (data.status == "false") {
+                            document.getElementById('box-menu-profile').innerHTML = template.componentMenuProfileAdd.replace("{ADDFRIEND}",i18n[whatoodo.lang].TEXT_ADD).replace("{EVENTS}",i18n[whatoodo.lang].TEXT_EVENTS).replace("{FRIENDS}",i18n[whatoodo.lang].TEXT_FRIENDS).replace("{COUNT}","+18").replace("{ID}",id);
+                                    $('.profile').click(function (){
+                                        $('#add-friend-confirm').show();
+										var params = {
+                							url: service.getBaseUrl()+"getNewFriendData.php",
+                							global: false,
+                							type: "POST",
+                							dataType: "json",
+                							async: true,
+                							data: {
+               									pid : id
+               								},
+                						success: function(data) {
+                							var tamanho = data['friendsData'].length;
+                							var users = "";
+                							for(x = 0; x < tamanho; x++){
+                								var item = data['friendsData'][x];
+                		
+                								users += "<div class='picture-mutual'>"+
+                									"<img id='newfriend-mutual-friend' src="+item.usp_photo+">"+
+                									"</div>";
+                		
+                							}
+                							//Sex is very good
+                							var sex = "";
+                							if(data['usp_gender'] == "M"){
+                								sex = "Male";
+                							}else{
+                								sex = "Female";
+                							}
+                							$('#add-friend-confirm').children().html('<div class="up">'+
+																						'Add Friend'+
+																					'</div>'+
+																					'<div class="friendPicture-Add">'+
+																						'<img src='+data['usp_photo']+'>'+
+																						'<div class="name">'+data['usp_firstname']+' '+data['usp_lastname']+'</div>'+
+																						'<div class="sex">'+sex+', '+data['usp_city']+'</div>'+
+																					'</div>'+
+																					'<div class="personal-message">'+
+																						users+
+																						'<label>Personal Message</label>'+
+																						'<textarea id="personal-message"></textarea>'+
+																					'</div>'+
+																					'<div class="bts-confirm">'+
+																						'<div class="button red bt-request-cancel" id="bt-cancel-friend">Cancel</div>'+
+																						'<div class="button bt-request-confirm" id="bt-add-friend">Add Friend</div>'+
+																					'</div>');
+											$('#bt-cancel-friend').click(function (){
+												$('#add-friend-confirm').hide();
+											});
+											$('#bt-add-friend').click(function (){
+												var personal_msg = $('#personal-message').val();
+												$.ajax({
+                    								type: "POST",
+                    								url: service.getBaseUrl()+"addFriend.php",
+                    								dataType: "json",
+                    								data: {
+                        								friendId: id,
+                        								msg: personal_msg
+                    								},
+                    								success: function(data) {
+                        								if (data.status == "OK") {
+                            								$('#add-friend-confirm').hide();
+                            								wtd.alert.showMessage('Friend request sent.');
+                        								} else {
+                            								if (data.errormsg) {
+                                								wtd.alert.showMessage(data.errormsg);
+                            							} else {
+                                								wtd.alert.showMessage("An error has occurred. Please try again.");
+                            							}
+                        								}
+                    								},
+                    								error: function(data) {
+                        								wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                    								}
+                							});
+									});
+                				},
+                				error: function(data) {
+                    				wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                				}
+            					};
+            					$.ajax(params);
+                                });
+                        		}else if(data.status != "false" ){
+                            		document.getElementById('box-menu-profile').innerHTML = template.componentMenuProfileFriend.replace("{PROFILE}",i18n[whatoodo.lang].TEXT_PROFILE).replace("{EVENTS}",i18n[whatoodo.lang].TEXT_EVENTS).replace("{FRIENDS}",i18n[whatoodo.lang].TEXT_FRIENDS).replace("{COUNT}","+18").replace("{ID}",id);	
+                        		}
+                    			},
+                    			error: function(data) {
+                            		//alert('Wrong User');
+                    			}
+        					};
+        					$.ajax(params);
+						},
+	getUid: function(page){
+		var params = {
+                	url: service.getBaseUrl()+"getPhotofriendprofile.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                        	uid : page	
+                	},
+                        dataType: "json",
+                        async: false,
+			success: function(data) {
+                                     var PhotoProfile = "";
+		
+				     for(x = 0; x < 1; x++){
+					var item = data['userphoto'][x];
+
+					PhotoProfile += template.imageProfile.replace("{IMG}",item.photo).replace("{NAME}",item.usrname);
+				     }	
+					document.getElementById('box-img-profile').innerHTML = PhotoProfile;
+                                },
+                                error: function(data) {
+                                	//alert('Wrong User');
+                                }
+                        };
+                   	$.ajax(params);
+
+	},
+	renderNews: function(page){
+		var params = {
+                	url: service.getBaseUrl()+"friendnews.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                        	uid : page	
+                	},
+                        dataType: "json",
+                        async: false,
+			success: function(data) {
+                    var listProfile = "";				
+			
+					var tamanho = data['userfeed'].length;					
+	
+					for(x = 0; x < tamanho; x++){
+					    var item = data['userfeed'][x];	
+					    switch(item.type) {	
+					    case "Like":
+						    listProfile += template.listItem.replace("{IMG}",item.userphoto).replace("{NAME}",item.username).replace("{DATE}",item.date).replace("{TEXT}","Like "+item.localname);
+						    break;
+						case "Share":
+						    listProfile += template.listItem.replace("{IMG}",item.userphoto).replace("{NAME}",item.username).replace("{DATE}",item.date).replace("{TEXT}","Share a "+item.localname);
+						    break;
+						case "Event":
+						    listProfile += template.listItem.replace("{IMG}",item.userphoto).replace("{NAME}",item.username).replace("{DATE}",item.date).replace("{TEXT}","Go to "+item.localname);
+						    break;
+						default:
+						    listProfile += template.listItem.replace("{IMG}",item.userphoto).replace("{NAME}",item.username).replace("{DATE}",item.date).replace("{TEXT}","Like a whatoodo ");
+						    break;
+					    }
+					}	
+					document.getElementById('box-list').innerHTML = listProfile;	
+              },
+              error: function(data) {
+                                	
+              }
+          };
+          $.ajax(params);
+	},
+	renderFriendsForFriends: function(id){
+	        var params = {
+                	url: service.getBaseUrl()+"FriendforFriend.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                        	uid : id
+                	},
+                        dataType: "json",
+                        async: false,
+			        success: function(data) {
+                        var PhotoFriends = "";
+		                
+		                var tamanho = data['friendForFriend'].length;
+		                
+				        for(x = 0; x < tamanho; x++){
+					        var item = data['friendForFriend'][x];
+
+        					PhotoFriends += template.imageFriends.replace("{IMG}",item.userphoto).replace("{ID}",item.id);
+		    		     }	
+       					document.getElementById('box-img-friends').innerHTML = template.componentImgFriends.replace("{LIST_IMG}",PhotoFriends);
+                                },
+                                error: function(data) {
+                                	//alert('Wrong User');
+                                }
+                        };
+                   	$.ajax(params);
+	},
+	bind: function(){	
+	},
+	render: function(){
+		
+		document.getElementById('content-right-top').style.display = "none";
+		
+		/*var listImage = "";
+		for(x = 0; x < 5; x++){
+			listImage += template.imageFriends.replace("{IMG}","style/img/img2.jpg");
+		}
+		document.getElementById('box-img-friends').innerHTML = template.componentImgFriends.replace("{LIST_IMG}",listImage);*/
+				
+								
+		document.getElementById('box-suggestions').innerHTML = template.componentSuggestions.replace("{SUGG}",template.suggestions.replace("{IMG}","style/img/wild.jpg"));	
+		document.getElementById('box-advertising').innerHTML = template.componentAdvertising.replace("{ADV}",template.advertising.replace("{IMG}","style/img/wild.jpg"));							
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

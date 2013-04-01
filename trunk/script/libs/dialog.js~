@@ -1,0 +1,85 @@
+//Classe dialog
+$(document).ready( function() {
+    allertMsg = window.allertMsg || {};
+    allertMsg.alert = {
+        callback: null,
+        showMessage: function(message, args) {
+            //Valores default
+            args = $.extend({
+                btnValue: "Confirm",
+                timeout: 3000,
+                callback: null
+            }, args);
+            allertMsg.alert.callback = args.callback;
+            $('#alert-message').html(message);
+            if (args['buttons']) {
+                $('#alert-buttons').html(args['buttons'].replace('&confirm', '<input id="alert-confirm" class="button" type="button" value="'+args['btnValue']+'" />'));
+            } else {
+                $('#alert-buttons').html('<input id="alert-confirm" class="button" type="button" value="'+args['btnValue']+'" />');
+            }
+            $('#alert-confirm').val(args['btnValue']);
+            $('#alert').css('top', window.pageYOffset + 120);
+            $('#dark').height($(document).height());
+            $('#dark').show();
+            $('#alert').show( function() {
+                allertMsg.alert.bind();
+                //Timeout implementation
+                if (args['timeout'] != null)
+                    $.doTimeout('alertTimer', args['timeout'], function() {
+                        allertMsg.alert.hide();
+                    });
+            });
+        },
+        showConfirm: function(message, args) {
+            //Valores default
+            args = $.extend({
+                btnConfirm: "Confirm",
+                btnCancel: "Cancel",
+                callback: null
+            }, args);
+            allertMsg.alert.callback = args.callback;
+            $('#alert-message').html(message);
+            $('#alert-buttons').html('<input id="alert-confirm" class="button" type="button" value="'+args['btnConfirm']+'" /> <input id="alert-cancel" class="button red" type="button" value="'+args['btnCancel']+'" />');
+            $('#alert').css('top', window.pageYOffset + 120);
+            $('#dark').height($(document).height());
+            $('#dark').show();
+            $('#alert').show( function() {
+                allertMsg.alert.bind();
+            });
+            
+        },
+        showLoader: function() {
+            $('#alert-message').html("<div style='text-align: center; padding-top: 90px;'><img src='style/img/loaders/2.gif' /></div>");
+            $('#alert-buttons').html("<p>&nbsp;</p>");
+            $('#alert').css('top', window.pageYOffset + 120);
+            $('#dark').height($(document).height());
+            $('#dark').show();
+            $('#alert').show();
+        },
+        hideLoader: function() {
+            $('#dark').hide();
+            $('#alert').hide();
+        },
+        hide: function() {
+            allertMsg.alert.unbind();
+            $('#dark').hide();
+            $('#alert').fadeOut(allertMsg.alert.callback);
+        },
+        //Click events
+        bind: function() {
+            $('#alert-confirm').click( function() {
+                $.doTimeout('alertTimer', false);
+                allertMsg.alert.hide();
+            });
+            $('#alert-cancel').click( function() {
+                allertMsg.alert.callback = null;
+                allertMsg.alert.hide();
+            });
+            
+        },
+        unbind: function() {
+            $('#alert-confirm').unbind();
+        }
+    };
+    window.allertMsg = allertMsg;
+}).ready( function() {});

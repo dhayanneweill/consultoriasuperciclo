@@ -1,0 +1,52 @@
+<?php
+session_start();
+include 'api.php';
+include 'utils.php';
+include 'model/place.php';
+include 'model/user.php';
+include 'model/finantial.php';
+
+switch(API::getMethod())
+{
+	case 'get':
+		$data = API::getData();
+		
+		if (isset($data['offset']))
+			$offset = $data['offset'];
+		else
+			$offset = 0;
+		
+		if (isset($data['size']))
+			$size = $data['size'];
+		else
+			$size = 10;
+		if ($size > 100)
+			$size = 100;
+		if (isset($data['type']))
+			$expands = explode(",", $data['expand']);
+		else
+			$expands = Array(0 => "user", 1 => "place", 2 => "event");
+		
+		$data['offset'] = 0;
+		$data['size'] = 100;
+		$data['sort'] = null;
+		$data['globalSearch'] = true;
+		
+		 
+		$return = Array();
+		// if (in_array("user", $expands) || $expands == null)
+			// array_push($return, User::search($data));
+		if (in_array("place", $expands) || $expands == null)
+			$return += Place::search($data);
+		// if (in_array("event", $expands) || $expands == null)
+			// $return = Event::search($data);
+		break;
+		
+	default:
+		API::error(501, "Not supported.");
+		return;
+}
+$return = array_splice($return, $offset, $size);
+
+API::response($return);
+?>

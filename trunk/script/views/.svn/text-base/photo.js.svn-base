@@ -1,0 +1,15 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.photo = {
+	init: function(){
+		document.getElementById('photo').innerHTML = 'page photo';
+		
+	},
+	bind: function(){
+	},
+	render: function(){
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

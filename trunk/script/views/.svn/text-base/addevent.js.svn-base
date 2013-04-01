@@ -1,0 +1,161 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.addevent = {
+	init: function(){
+		if (whatoodo.user != null && whatoodo.user != 'undefined') {
+			document.getElementById('addevent').innerHTML = template.content002;
+		
+			service.getPhotoprofile(function(data) {
+				whatoodo.addevent.renderPhoto(data);	
+			},
+			function() {
+				wtd.alert.showMessage("Error while print your picture");
+			});
+		
+			service.getUserfriends(function(data) {
+				whatoodo.addevent.renderUserfriends(data);	
+			},
+			function() {
+				wtd.alert.showMessage("Error while print your friends");
+			});
+		
+			whatoodo.addevent.render();
+			whatoodo.addevent.bind();
+			$('#change-date-event').datepicker({
+				dateFormat : 'yy/mm/dd',
+				yearRange : '0:+10',
+				changeMonth : true,
+				changeYear : true,
+				altField : '#change-date-event'
+			});
+			$("#event-local").tokenInput(service.getBaseUrl() + "getPlacesCache.php", {tokenLimit: 1});
+			$("#event-who").tokenInput(service.getBaseUrl() + "getFriendsCache.php", {});
+		//}
+		}else{
+			lib.views.set('home', {}, whatoodo);
+		}
+	},
+	bind: function(){
+		$('#calendar').click(function (){
+		    $('#change-date-event').position({
+				of : $('#calendar'),
+				my : 'left top',
+				at : 'right middle',
+				offset : '0',
+				collision : 'none'
+			});
+			$('#change-date-event').datepicker("show");
+		});
+	},
+	renderPhoto: function(data){
+		var PhotoProfile = "";
+		
+		for(x = 0; x < 1; x++){
+			var item = data['userphoto'][x];
+
+			PhotoProfile += template.imageProfile.replace("{IMG}",item.usp_photo).replace("{NAME}",item.usp_firstname+' '+item.usp_lastname);
+		}	
+		document.getElementById('box-img-profile').innerHTML = PhotoProfile;
+	},
+	renderUserfriends : function(data) {
+		var FriendPhoto = "";
+
+		var tamanho = data['userfriends'].length;
+
+		for( x = 0; x < tamanho; x++) {
+			var item = data['userfriends'][x];
+			FriendPhoto += template.imageFriends.replace("{IMG}",item.usp_photo).replace("{ID}", item.acc_id);
+		}
+		document.getElementById('box-img-friends').innerHTML = template.componentImgFriends.replace("{LIST_IMG}", FriendPhoto);
+
+	},
+	render: function(){
+		document.getElementById('content-right-top').style.display = "none";	
+		
+		var listProfile = "";
+		for(x = 0; x < 1; x++){
+			listProfile += template.componentAddEvent.replace("{IMG}","style/img/icons/icon_calendar.png")
+			.replace("{TEXT}","Date: ").replace("{HOUR}","Hour").replace("{00}","00:00").replace("{ZERO}","00:00 AM").replace("{03}","00:30")
+			.replace("{ZEROTRINTA}","00:30 AM").replace("{01}","01:00").replace("{UM}","01:00 AM").replace("{13}","01:30").replace("{UMTRINTA}","01:30 AM")
+			.replace("{02}","02:00").replace("{DOIS}","02:00 AM").replace("{23}","02:30").replace("{DOISTRINTA}","02:30 AM").replace("{30}","03:00")
+			.replace("{TRES}","03:00 AM").replace("{33}","03:30").replace("{TRESTRINTA}","03:30 AM").replace("{04}","{04:00}").replace("{QUATRO}","04:00 AM")
+			.replace("{43}","04:30").replace("{QUATROTRINTA}","04:30 AM").replace("{05}","05:00").replace("{CINCO}","05:00 AM").replace("{53}","05:30")
+			.replace("{CINCOTRINTA}","05:30 AM").replace("{06}","06:00").replace("{SEIS}","06:00 AM").replace("{63}","06:30").replace("{SEISTRINTA}","06:30 AM")
+			.replace("{07}","07:00").replace("{SETE}","07:00 AM").replace("{73}","07:30").replace("{SETETRINTA}","07:30 AM").replace("{08}","08:00")
+			.replace("{OITO}","08:00 AM").replace("{83}","08:30").replace("{OITOTRINTA}","08:30 AM").replace("{09}","09:00").replace("{NOVE}","09:00 AM")
+			.replace("{93}","09:30").replace("{NOVETRINTA}","09:30 AM").replace("{100}","10:00").replace("{DEZ}","10:00 AM").replace("{103}","10:30")
+			.replace("{DEZTRINTA}","10:30 AM").replace("{110}","11:00").replace("{ONZE}","11:00 AM").replace("{113}","11:30").replace("{ONZETRINTA}","11:30 AM")
+			.replace("{120}","12:00").replace("{DOZE}","12:00 AM").replace("{123}","12:30").replace("{DOZERTRINTA}","12:30 PM").replace("{130}","13:00")
+			.replace("{130}","13:00").replace("{TREZE}","13:00 PM").replace("{133}","13:30").replace("{TREZETRINTA}","13:30 PM").replace("{140}","14:00")
+			.replace("{QUATORZE}","14:00 PM").replace("{143}","14:30 PM").replace("{QUATORZETRINTA}","14:30 PM").replace("{150}","15:00")
+			.replace("{QUINZE}","15:00 PM").replace("{155}","15:30").replace("{QUINZETRINTA}","15:30 PM").replace("{160}","16:00")
+			.replace("{DEZESSEIS}","16:00 PM").replace("{163}","16:30").replace("{DEZESSEISTRINTA}","16:30 PM").replace("{170}","17:00")
+			.replace("{DEZESSETE}","17:00 PM").replace("{173}","17:30 PM").replace("{DEZESSETETRINTA}","17:30 PM").replace("{180}","18:00")
+			.replace("{DEZOITO}","18:00 PM").replace("{183}","18:30").replace("{DEZOITOTRINTA}","18:30 PM").replace("{190}","19:00")
+			.replace("{DEZENOVE}","19:00 PM").replace("{200}","20:00").replace("{VINTE}","20:00 PM").replace("{203}","20:30")
+			.replace("{VINTETRINTA}","20:30 PM").replace("{210}","21:00").replace("{VINTEUM}","21:00 AM").replace("{213}","21:30")
+			.replace("{VINTEUMTRINTA}","21:30 PM").replace("{220}","22:00").replace("{VINTEDOIS}","22:00 PM").replace("{223}","22:30")
+			.replace("{VINTEDOISTRINTA}","22:30 PM").replace("{230}","23:00").replace("{VINTETRES}","23:00 PM").replace("{233}","23:30")
+			.replace("{VINTETRESTRINTA}","23:30 PM").replace("{EVENTNAME}","Name Event?").replace("{WHERE}","Where?").replace("{WHO}","Who?")
+			.replace("{MORE}","More info?").replace("{PHONE}","Phone?").replace("{ADD}","Add Event");
+		}	
+		document.getElementById('box-list').innerHTML = listProfile;			
+		
+		
+		lib.events.add("bt-add-event","onclick",function(e){
+		//TODO try to make this code like our own architeture and not this jquery ajax	
+			var params = {
+                    url: service.getBaseUrl() + "addevent.php",
+                    global: false,
+                    type: "POST",
+                    data: {
+                    	when : document.getElementById('change-date-event').value,
+					    hour : document.getElementById('hour').value,
+					    name : document.getElementById('event-name').value,
+					    local : document.getElementById('event-local').value,
+					    who : document.getElementById('event-who').value,
+                		info : document.getElementById('event-info').value,
+                		phone : document.getElementById('event-phone').value			
+                	 },
+                     dataType: "json",
+                     async: false,
+                     success: function(data) {
+                     	wtd.alert.showMessage("New event created")
+                     	window.location = 'index.php?page=events'
+                     },
+                     error: function(data) {
+                     	wtd.alert.showMessage("Its not possible to create");
+                     }
+              };
+              wtd.alert.showLoader();
+              $.ajax(params);		
+		});
+		
+		var params = {
+                url: service.getBaseUrl()+"getNotifications.php",
+                global: false,
+                type: "POST",
+                dataType: "json",
+                async: true,
+                data: {
+        
+               	},
+                success: function(data) {
+                	document.getElementById('box-menu-profile').innerHTML = template.componentMenuProfile.replace("{USERID}", data['uid'])
+                	.replace("{PROFILE}",i18n[whatoodo.lang].TEXT_PROFILE).replace("{EVENTS}",i18n[whatoodo.lang].TEXT_EVENTS)
+                	.replace("{FRIENDS}",i18n[whatoodo.lang].TEXT_FRIENDS).replace("{COUNT}", ' + '+data['pendingEvents'])
+                	.replace("{COUNTFR}",' + '+data['pendingFriends']);
+                },
+                error: function(data) {
+                    wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                }
+            };
+            $.ajax(params);		
+							
+		//document.getElementById('box-suggestions').innerHTML = template.componentSuggestions.replace("{SUGG}",template.suggestions.replace("{IMG}","style/img/wild.jpg"));	
+		document.getElementById('box-advertising').innerHTML = template.componentAdvertising.replace("{ADV}",template.advertising.replace("{IMG}","style/img/wild.jpg"));				
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

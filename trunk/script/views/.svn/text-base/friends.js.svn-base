@@ -1,0 +1,301 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.friends = {
+	init: function(){
+		if (whatoodo.user != null && whatoodo.user != 'undefined') {
+			document.getElementById('friends').innerHTML = template.content002;
+    	
+			service.getPhotoprofile(function(data) {
+				whatoodo.friends.renderPhoto(data);	
+			},
+			function() {
+				wtd.alert.showMessage("Error in your picture, please, try again");
+			});
+			service.getUserfriends(function(data) {
+				whatoodo.friends.renderUserfriends(data);	
+			},
+			function() {
+				wtd.alert.showMessage("Error while render your friends");
+			});
+			service.getUserfriends(function(data) {
+				whatoodo.friends.renderFriends(data);	
+			},
+			function() {
+				wtd.alert.showMessage("Error while render your list friends");;
+			});
+		
+			whatoodo.friends.bind();
+		
+			service.getSuggestion(function(data) {
+				whatoodo.friends.cache = data;
+				whatoodo.friends.render(data);
+			}, function() {
+				//wtd.alert.showMessage("Error in your suggestions friends");
+			});
+		}else{
+			lib.views.set('home', {}, whatoodo);
+		}
+	},
+	bind: function(){
+	},
+	renderPhoto: function(data){
+		var PhotoProfile = "";
+		
+		for(x = 0; x < 1; x++){
+			var item = data['userphoto'][x];
+
+			PhotoProfile += template.imageProfile.replace("{IMG}",item.usp_photo).replace("{NAME}",item.usp_firstname+' '+item.usp_lastname);
+			
+		}	
+		document.getElementById('box-img-profile').innerHTML = PhotoProfile;
+	},
+	renderUserfriends: function(data){
+		var FriendPhoto = "";
+		if(data['userfriends'] != null){
+			var tamanho = data['userfriends'].length;
+		
+
+			for(x = 0; x < tamanho; x++){
+				var item = data['userfriends'][x];
+
+				FriendPhoto += template.imageFriends.replace("{IMG}",item.usp_photo).replace("{ID}",item.acc_id);
+			}
+		
+			document.getElementById('box-img-friends').innerHTML = template.componentImgFriends.replace("{LIST_IMG}",FriendPhoto);
+		}
+
+	},
+	renderFriends: function(data){
+		if(data['userfriends'] != null){
+			var FriendPhoto = template.componentEditFriend.replace("{TEXT}","Edit");
+		}else{
+			var FriendPhoto = "";
+		}
+		var sizeRequest = data['requestFriend'].length;
+		
+		if(sizeRequest >= 1){
+			for(x = 0; x < sizeRequest; x++){
+				var item = data['requestFriend'][x];
+				FriendPhoto += template.componentRequestFriend.replace("{FRIENDIMAGE}",item.usp_photo).replace("{NAME}",item.usp_firstname+' '+item.usp_lastname).replace("{MESSAGE}",item.acc_message)
+						.replace("{FRIENDID}",item.acc_id).replace("{IDFRIEND}",item.acc_id);
+			}
+		}
+		
+		if(data['userfriends'] != null){
+		
+			var tamanho = data['userfriends'].length;
+        
+			for(x = 0; x < tamanho; x++){
+				var item = data['userfriends'][x];
+
+				FriendPhoto += template.componentImageFriend.replace("{IMG}",item.usp_photo).replace("{NAME}",item.usp_firstname+' '+item.usp_lastname)
+				.replace("{ID}",item.acc_id);
+			}
+		}	
+		document.getElementById('box-list').innerHTML = FriendPhoto;
+		if(data['userfriends'] != null){
+			$('#bt-edit-friend').click(function (){
+		    	for(x = 0; x < 1; x++){
+			        var item = data['userfriends'][x];
+	            	window.location = 'index.php?page=editfriends&uid='+item.loggeduser;
+	        	}
+	    	});
+	   }
+	    
+	     $('.bt-request-confirm').click( function() {
+                var objEvent = this;
+                var params = {
+                    url: service.getBaseUrl()+"acceptRequest.php",
+                    global: false,
+                    type: "POST",
+                    dataType: "json",
+                    async: true,
+                    data: {
+                        accid: $(this).attr('accid')
+                    },
+                    success: function(data) {
+                        if (data.status == "OK") {
+                            $(objEvent).parent().parent().fadeOut();
+                        } else {
+                            if (data.errormsg != "") {
+                                wtd.alert.showMessage(data.errormsg);
+                            } else {
+                                wtd.alert.showMessage("An error has occurred. Please try again.");
+                            }
+                        }
+                    },
+                    error: function(data) {
+                        wtd.alert.showMessage("An error has occurred. Please try again.");
+                    }
+                };
+                $.ajax(params);
+            });
+            
+           $('.bt-request-cancel').click( function() {
+                var objEvent = this;
+                var params = {
+                    url: service.getBaseUrl()+"rejectRequest.php",
+                    global: false,
+                    type: "POST",
+                    dataType: "json",
+                    async: true,
+                    data: {
+                        accid: $(this).attr('accid')
+                    },
+                    success: function(data) {
+                        if (data.status == "OK") {
+                            $(objEvent).parent().parent().fadeOut();
+                        } else {
+                            if (data.errormsg != "") {
+                                wtd.alert.showMessage(data.errormsg);
+                            } else {
+                                wtd.alert.showMessage("An error has occurred. Please try again.");
+                            }
+                        }
+                    },
+                    error: function(data) {
+                        wtd.alert.showMessage("An error has occurred. Please try again.");
+                    }
+                };
+                $.ajax(params);
+            });
+	},
+	render: function(){
+		document.getElementById('content-right-top').style.display = "none";
+		var params = {
+                url: service.getBaseUrl()+"getNotifications.php",
+                global: false,
+                type: "POST",
+                dataType: "json",
+                async: true,
+                data: {
+        
+               	},
+                success: function(data) {
+                	document.getElementById('box-menu-profile').innerHTML = template.componentMenuProfile.replace("{USERID}", data['uid'])
+                	.replace("{PROFILE}",i18n[whatoodo.lang].TEXT_PROFILE).replace("{EVENTS}",i18n[whatoodo.lang].TEXT_EVENTS)
+                	.replace("{FRIENDS}",i18n[whatoodo.lang].TEXT_FRIENDS).replace("{COUNT}", ' + '+data['pendingEvents'])
+                	.replace("{COUNTFR}",' + '+data['pendingFriends']);
+                },
+                error: function(data) {
+                    wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                }
+            };
+            $.ajax(params);			
+		whatoodo.friends.renderSuggestion();
+		document.getElementById('box-advertising').innerHTML = template.componentAdvertising.replace("{ADV}",template.advertising.replace("{IMG}","style/img/wild.jpg"));	
+							
+	},
+	renderSuggestion : function() {
+		var data = whatoodo.friends.cache.splice(0, 1);
+		data = data[0];
+		var suggestionHTML = "";
+		
+		if( typeof (data) != 'undefined') {
+			var id = data['acc_id'];
+		}
+		
+		if( typeof (data) != 'undefined') {
+			suggestionHTML = template.suggestions.replace("{FRIENDID}",data['acc_id'])
+			.replace("{IMG}", data['usp_photo'])
+			.replace("{FRIENDID}",data['acc_id'])
+			.replace("{NAME}",data['usp_firstname']+" "+data['usp_lastname'])
+			.replace("{TEXT}","mutual friends")
+			.replace("{MUTUALFRIENDS}",data['mutual_friends'])
+			.replace("{ACTIONLINK}",data['action_link'])
+			.replace("{ACTION}",data['action']);
+			document.getElementById('box-suggestions').innerHTML = template.componentSuggestions.replace("{SUGG}", suggestionHTML);
+			//$('#suggestion-'+i).children('.suggestions-message').hide();
+			$('#suggestion-close').click(function() {
+				
+				//$('#suggestion-'+i).fadeOut('fast', function() {
+					//$('#suggestion-'+i).html('<div class="suggestions-message"></div>');
+					//$('#suggestion-'+i).show();
+					whatoodo.friends.renderSuggestion();
+				//});
+			});
+		} else {
+			document.getElementById('suggestions-container').innerHTML = '<div class="suggestions-message">No suggestions for now! Please try again later.</div>';
+		}
+		$('.add').click(function (){
+			$('#add-friend-confirm').show();
+			var params = {
+                url: service.getBaseUrl()+"getNewFriendData.php",
+                global: false,
+                type: "POST",
+                dataType: "json",
+                async: true,
+                data: {
+               		pid : id,
+               	},
+                success: function(data) {
+                	var tamanho = data['friendsData'].length;
+                	var users = "";
+                	for(x = 0; x < tamanho; x++){
+                		var item = data['friendsData'][x];
+                		
+                		users += "<div class='picture-mutual'>"+
+                					"<img id='newfriend-mutual-friend' src="+item.usp_photo+">"+
+                				"</div>";
+                		
+                	}
+                	//Sex is very good
+                	var sex = "";
+                	if(data['usp_gender'] == "M"){
+                		sex = "Male";
+                	}else{
+                		sex = "Female";
+                	}
+                	$('#add-friend-confirm').children().html('<div class="up">'+
+																'Add Friend'+
+															'</div>'+
+															'<div class="friendPicture-Add">'+
+																'<img src='+data['usp_photo']+'>'+
+																'<div class="name">'+data['usp_firstname']+' '+data['usp_lastname']+'</div>'+
+																'<div class="sex">'+sex+', '+data['usp_city']+'</div>'+
+															'</div>'+
+															'<div class="personal-message">'+
+																users+
+																'<label>Personal Message</label>'+
+																'<textarea id="personal-message"></textarea>'+
+															'</div>'+
+															'<div class="bts-confirm">'+
+																'<div class="button red bt-request-cancel" id="bt-cancel-friend">Cancel</div>'+
+																'<div class="button bt-request-confirm" id="bt-add-friend">Add Friend</div>'+
+															'</div>');
+					$('#bt-cancel-friend').click(function (){
+						$('#add-friend-confirm').hide();
+					});
+					$('#bt-add-friend').click(function (){
+						var personal_msg = $('#personal-message').val();
+						$.ajax({
+                    		type: "POST",
+                    		url: service.getBaseUrl()+"addFriend.php",
+                    		dataType: "json",
+                    		data: {
+                        		friendId: id,
+                        		msg: personal_msg
+                    		},
+                    		success: function(data) {
+                            		$('#add-friend-confirm').hide();
+                            		wtd.alert.showMessage('Friend request sent.');
+                            		history.go(0);
+                    		},
+                    		error: function(data) {
+                        		wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                    		}
+                		});
+					});
+                },
+                error: function(data) {
+                    wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                }
+            };
+            $.ajax(params);
+		});
+	
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

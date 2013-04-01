@@ -1,0 +1,123 @@
+<?php
+//Raw protection
+include_once 'config.php';
+include_once 'query.php';
+session_start();
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+$db->begin();
+$placeid = $_POST["placeid"];
+$name = mysql_real_escape_string($_POST["name"]);
+$description = mysql_real_escape_string($_POST["description"]);
+$address = mysql_real_escape_string($_POST["address"]);
+$city = mysql_real_escape_string($_POST["city"]);
+$state = mysql_real_escape_string($_POST["state"]);
+$country = mysql_real_escape_string($_POST["country"]);
+$cost = mysql_real_escape_string($_POST["mediumcost"]);
+$phone1 = mysql_real_escape_string($_POST["phone"]);
+$phone2 = mysql_real_escape_string($_POST["cellphone"]);
+$twitter = mysql_real_escape_string($_POST["twitter"]);
+$website = mysql_real_escape_string($_POST["website"]);
+$email = mysql_real_escape_string($_POST["email"]);
+$tags = array_unique(explode(" ", str_replace(",", " ",$_POST["othercategories"])));
+$parking = $_POST["parking"];
+$accessible = $_POST["accessible"];
+$smoking = $_POST["smoking"];
+$delivery = $_POST["delivery"];
+$livemusic = $_POST["livemusic"];
+$playroom = $_POST["playroom"];
+$wifi = $_POST["wifi"];
+$waiter = $_POST["waiter"];
+$reservation = $_POST["reservation"];
+$days = $_POST["days"];
+$start = $_POST["start"];
+$end = $_POST["end"];
+$promodays = $_POST["promodays"];
+$cards = $_POST["cards"];
+$placecategory = $_POST["placecategory"];
+$subcategory = $_POST["subcategory"];
+if (!$name || !$description || !$city || !$state || !$country) {
+	die("EMPTY FIELDS");
+	return;
+}
+//Valida país
+$result = $db->select_one("SELECT printable_name FROM country WHERE iso = '".$country."'");
+if ($result == "" || !$result) {
+	die("INVALID COUNTRY");
+	return;
+}
+
+//Código para manejar a Foto
+// if ($photo['name']) {
+	// $dir="uploads/places/";
+	// if (!in_array(end(explode(".", $photo['name'])), $CONFIG_image_allowed_extensions)) {
+		// error("Invalid file format!");
+		// return;
+	// }
+	// if (($photo['size'] / 1024) > $CONFIG_max_thumb_photo_size) {
+		// error("Photo cannot exceed 700Kb!");
+		// return;
+	// }
+	// $imagespecs = getimagesize($photo['tmp_name']);
+	// $imagewidth = $imagespecs[0];
+	// $imageheight = $imagespecs[1];
+	// if ($imagewidth > $CONFIG_max_thumb_photo_width || $imageheight > $CONFIG_max_thumb_photo_height) {
+		// error("Image dimensions are too big.");
+		// return;
+	// }
+// }
+
+$db->begin();
+$result1 = $db->update_sql("UPDATE `place` SET pla_name = '".$name."', pla_description = '".$description."', pla_address = '".$address."', pla_city = '".$city."', pla_state = '".$state."', pla_country = '".$country."', pla_cost = '".$cost."', pla_telephone1 = '".$phone1."', pla_telephone2 = '".$phone2."', pla_website = '".$website."', pla_email = '".$email."', pla_hasParking = '".$parking."', pla_hasWChairAccess = '".$accessible."', pla_hasDelivery = '".$delivery."', pla_hasSmoking = '".$smoking."', pla_hasPlayroom = '".$playroom."', pla_hasWifi = '".$wifi."', pla_hasWaiter = '".$waiter."', pla_hasReservation = '".$reservation."', pla_twitter = '".$twitter."', pla_hasLiveMusic = '".$livemusic."'
+						 	WHERE place.pla_id = '".$placeid."' ;");
+$i = 0;
+$values = "";
+while ($i < sizeof($subcategory)) {
+	if ($subcategory[$i] != "") {
+		array_push($tags,$subcategory[$i]);
+	}
+	$i++;
+}
+if ($i == 0) { $values = ""; }
+$i = 0;
+array_unique($tags);
+while ($i < sizeof($tags)) {
+	if ($tags[$i] != "") {
+		$values .= ", ('".$placeid."', '". $tags[$i] ."')";
+	}
+	$i++;
+}
+$result2 = $db->update_sql("DELETE FROM placetags WHERE pla_id = '".$placeid."';");
+$result2 = $db->insert_sql("INSERT INTO `placetags` (`pla_id` , `plt_tag`) VALUES ('".$placeid."', '". $placecategory ."')".$values.";");
+$i = 0;
+$values = "";
+while ($i < sizeof($days)) {
+	$values .= "('".$placeid."', '". $days[$i] ."', '". $start[$i] ."', '". $end[$i] ."', '". $promodays[$i] ."'),";
+	$i++;
+}
+$values = substr($values,0,-1);
+$result3 = $db->update_sql("DELETE FROM businesstime WHERE pla_id = '".$placeid."';");
+$result3 = $db->insert_sql("INSERT INTO `businesstime` (`pla_id`, `bus_day`, `bus_start`, `bus_end`, `bus_promoday`) VALUES ".$values.";");
+$i = 0;
+$values = "";
+while ($i < sizeof($cards)) {
+	$values .= "(".$placeid.", '". $cards[$i] ."'),";
+	$i++;
+}
+$values = substr($values,0,-1);
+$result4 = $db->update_sql("DELETE FROM placepaymethod WHERE pla_id = '".$placeid."';");
+$result4 = $db->insert_sql("INSERT INTO `placepaymethod` (`pla_id`, `pla_pay`) VALUES ".$values.";");
+
+if ($result1) {
+	$db->commit();
+	die(json_encode(Array("status" => "OK")));
+} else {
+	$db->rollback();
+	die(json_encode(Array("status" => "ERROR")));
+}
+?>

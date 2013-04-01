@@ -1,0 +1,49 @@
+<?php
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+$returnUserFriends = Array();
+
+$result = $db->select('SELECT * FROM userfriends,userprofile WHERE userfriends.usf_status = "Accepted" AND userfriends.acc_id = "'.$_SESSION['loggeduser']['id'].'" AND userfriends.usf_id = userprofile.acc_id');
+while($row = $db->get_row($result)){
+	if ($row['usp_photo'] == "") {
+	 	$row['usp_photo'] = 'style/img/fotoperfil.png';
+		$row['loggeduser'] = $_SESSION['loggeduser']['id'];
+      }else{
+	 	 $row['usp_photo'] = urlimage($row['usp_photo'], "user");
+		 $row['loggeduser'] = $_SESSION['loggeduser']['id'];
+      }
+	array_push($returnUserFriends, $row);
+}
+
+$returnRequestFriends = Array();
+$friendRequest = $db->select('SELECT userprofile.acc_id, userprofile.usp_photo, userprofile.usp_firstname,
+                          userprofile.usp_lastname, userfriends.acc_message
+                          FROM userfriends,userprofile
+                          WHERE userfriends.usf_id = "'.$_SESSION['loggeduser']['id'].'"
+                          AND userfriends.usf_status = "Invited"
+                          AND userfriends.acc_id = userprofile.acc_id');
+while($friendsRequest = $db->get_row($friendRequest)){
+	if ($friendsRequest['usp_photo'] == "") {
+	 	$friendsRequest['usp_photo'] = 'style/img/fotoperfil.png';
+      }else{
+	 	$friendsRequest['usp_photo'] = urlimage($friendsRequest['usp_photo'], "user");
+      }
+	  array_push($returnRequestFriends, $friendsRequest);
+}
+
+echo json_encode(Array("userfriends" => $returnUserFriends, "requestFriend" => $returnRequestFriends));
+
+?>

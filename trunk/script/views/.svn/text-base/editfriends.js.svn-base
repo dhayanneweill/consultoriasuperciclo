@@ -1,0 +1,132 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.editfriends = {
+	init: function(){
+		if (whatoodo.user != null && whatoodo.user != 'undefined') {
+			document.getElementById('editfriends').innerHTML = template.content002;
+		
+        	service.getPhotoprofile(function(data) {
+				whatoodo.editfriends.renderPhoto(data);	
+			},
+			function() {
+				alert("erro");
+			});
+		
+			service.getUserfriends(function(data) {
+				whatoodo.editfriends.renderUserfriends(data);	
+			},
+			function() {
+				alert("erro");
+			});
+		
+			service.getUserfriends(function(data) {
+				whatoodo.editfriends.renderListFriends(data);	
+			},
+			function() {
+				alert("erro");
+			});
+		
+			whatoodo.editfriends.render();
+			whatoodo.editfriends.bind();
+		}else{
+			lib.views.set('home', {}, whatoodo);
+		}
+	},
+	bind: function(){
+	},
+	renderPhoto: function(data){
+		var PhotoProfile = "";
+		
+		for(x = 0; x < 1; x++){
+			var item = data['userphoto'][x];
+
+			PhotoProfile += template.imageProfile.replace("{IMG}",item.usp_photo).replace("{NAME}",item.usp_firstname+' '+item.usp_lastname);
+		}	
+		document.getElementById('box-img-profile').innerHTML = PhotoProfile;
+	},
+	renderUserfriends: function(data){
+		var FriendPhoto = "";
+
+		var tamanho = data['userfriends'].length;
+
+		for(x = 0; x < tamanho; x++){
+			var item = data['userfriends'][x];
+
+			FriendPhoto += template.imageFriends.replace("{IMG}",item.usp_photo).replace("{ID}",item.acc_id);
+		}	
+		document.getElementById('box-img-friends').innerHTML = template.componentImgFriends.replace("{LIST_IMG}",FriendPhoto);
+
+	},
+	renderListFriends: function(data){
+	    var ListUser = "";
+	    
+	    var tamanho = data['userfriends'].length;
+	    
+	    for(x = 0; x < tamanho; x++){
+	        var item = data['userfriends'][x];
+	        
+	        ListUser += template.componentListEditFriend.replace("{IMG}",item.usp_photo).replace("{NAME}",item.usp_firstname+' '+item.usp_lastname).replace("{ID}",item.acc_id).replace("{IMGCLOSE}","style/img/close.png");
+	        
+	    }
+	    document.getElementById('box-list').innerHTML = ListUser;
+	    
+	    $('.bt-cancel-friendship').click(function (){
+	        var objToRemove = $(this);
+	        var params = {
+                    url: service.getBaseUrl()+'deleteFriend.php',
+                    global: false,
+                    type: "POST",
+                    data: {
+                        "friendid": $(this).attr('friend-id')
+                    },
+                    dataType: "json",
+                    async: true,
+                    success: function(data) {
+                        //console.log(data);
+                        if (data.status == "OK") {
+                            objToRemove.parent().remove();
+                        }
+                    },
+                    error: function(data) {
+                       wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                    }
+                };
+                wtd.alert.showConfirm("Are you sure?");
+                $('#alert-confirm').click( function(){
+                    $.ajax(params);
+                });
+	        
+	    });
+	},
+	render: function(){
+	    document.getElementById('content-right-top').style.display = "none";
+	    
+	   	var params = {
+                url: service.getBaseUrl()+"getNotifications.php",
+                global: false,
+                type: "POST",
+                dataType: "json",
+                async: true,
+                data: {
+        
+               	},
+                success: function(data) {
+                	document.getElementById('box-menu-profile').innerHTML = template.componentMenuProfile.replace("{USERID}", data['uid'])
+                	.replace("{PROFILE}",i18n[whatoodo.lang].TEXT_PROFILE).replace("{EVENTS}",i18n[whatoodo.lang].TEXT_EVENTS)
+                	.replace("{FRIENDS}",i18n[whatoodo.lang].TEXT_FRIENDS).replace("{COUNT}", ' + '+data['pendingEvents'])
+                	.replace("{COUNTFR}",' + '+data['pendingFriends']);
+                },
+                error: function(data) {
+                    wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                }
+            };
+            $.ajax(params);		
+	    
+	    
+	    //document.getElementById('box-suggestions').innerHTML = template.componentSuggestions.replace("{SUGG}",template.suggestions.replace("{IMG}","style/img/wild.jpg"));	
+		document.getElementById('box-advertising').innerHTML = template.componentAdvertising.replace("{ADV}",template.advertising.replace("{IMG}","style/img/wild.jpg"));	
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

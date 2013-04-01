@@ -1,0 +1,76 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.recoverypasscode = {
+	init: function(){
+		document.getElementById('recoverypasscode').innerHTML = template.content002;
+    	
+		whatoodo.recoverypasscode.render();
+		whatoodo.recoverypasscode.bind();
+	},
+	bind: function(){
+	},
+	render: function(data){
+	    document.getElementById('content-right-top').style.display = "none";
+	    
+	    document.getElementById('recoverypasscode').innerHTML = template.recoveryPasscode.replace("{CODE}", "Enter your code?")
+	    .replace("{PASSWD}", "Enter your new password").replace("{PASSWDTWO}","Repeat your new password");
+	    
+	    $('#confirmCode').click(function(){
+	    	var params = {
+				url : service.getBaseUrl() + "verifyPassCode.php",
+				global : false,
+				type : "POST",
+				data : {
+					code : $('#code').val()
+				},
+				dataType : "json",
+				async : false,
+				success : function(data) {
+					if(data.status == "ERROR"){
+						wtd.alert.showMessage("Your passcode is incorrect or not exist, please try again!");
+					}else{
+						$('.new-passwd').show();
+	    				$('.button-confirm-password').show();
+	    			}	
+				},
+				error : function(data) {
+					wtd.alert.showMessage("Your passcode is incorrect or not exist, please try again!");
+				}
+			};
+			//wtd.alert.showLoader();
+			$.ajax(params);
+	    });
+	    $('#newpasswd').click(function (){
+	    	var passone = $('#codepass').val();
+	    	var passtwo = $('#codetwo').val();
+	    	if(passone != passtwo){
+	    		wtd.alert.showMessage("Your password is wrong or different");
+	    	}else{
+	    		var params = {
+				url : service.getBaseUrl() + "changePassword.php",
+				global : false,
+				type : "POST",
+				data : {
+					password : passone,
+					code : $('#code').val()
+				},
+				dataType : "json",
+				async : false,
+				success : function(data) {
+					wtd.alert.showMessage("Your password was changed!");
+					lib.views.set('home', {}, whatoodo);
+				},
+				error : function(data) {
+					wtd.alert.showMessage("Your passcode is incorrect or not exist, please try again!");
+				}
+			};
+			wtd.alert.showLoader();
+			$.ajax(params);
+	    	}
+	    });
+	    
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

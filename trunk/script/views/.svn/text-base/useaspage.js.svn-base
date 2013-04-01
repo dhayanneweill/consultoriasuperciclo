@@ -1,0 +1,124 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.useaspage = {
+	init: function(){
+		if (whatoodo.user != null && whatoodo.user != 'undefined') {
+			document.getElementById('useaspage').innerHTML = template.content002;
+		
+			service.getPhotoprofile(function(data) {
+				whatoodo.useaspage.renderPhoto(data);	
+			},
+			function() {
+				alert("erro");
+			});
+			service.getUserfriends(function(data) {
+				whatoodo.useaspage.renderUserfriends(data);	
+			},
+			function() {
+				alert("erro");
+			});
+			service.getPageadmin(function(data) {
+				whatoodo.useaspage.renderPages(data);	
+			},
+			function() {
+				alert("erro");
+			});
+			whatoodo.useaspage.render();
+		}else{
+			lib.views.set('home', {}, whatoodo);
+		}
+	},
+	bind: function(){
+	},
+	renderPages: function(data){
+		var listEvent = "";
+		
+		var tamanho = data['placesadmin'].length;
+		
+		for(x = 0; x < tamanho; x++){
+			var item = data['placesadmin'][x];
+			if(item.pla_status == 'Active'){
+				listEvent += template.listuseAsPage.replace("{IMG}",item.pla_photo).replace("{EVEID}",item.pla_id)
+				.replace("{NAME}",item.pla_name).replace("{IDEVE}",item.pla_id).replace("{DATE}",item.pla_state)
+				.replace("{TEXT}",item.pla_description).replace("{Status}","Inactive this place").replace("{PLACEID}",item.pla_id);
+			}else{
+				listEvent += template.listuseAsPage.replace("{IMG}",item.pla_photo).replace("{EVEID}",item.pla_id)
+				.replace("{NAME}",item.pla_name).replace("{IDEVE}",item.pla_id).replace("{DATE}",item.pla_state)
+				.replace("{TEXT}",item.pla_description).replace("{Status}","Active this place").replace("{PLACEID}",item.pla_id);
+			}
+		}	
+		document.getElementById('box-list').innerHTML = listEvent;
+		$('.idplace').click(function (){
+			var params = {
+                url: service.getBaseUrl()+"statusPlace.php",
+                global: false,
+                type: "POST",
+                dataType: "json",
+                async: true,
+                data: {
+        			"place" : $(this).attr('pla_id')
+               	},
+                success: function(data) {
+                	history.go(0);
+                	wtd.alert.showMessage("Place status was changed");
+                },
+                error: function(data) {
+                    wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                }
+            };
+            $.ajax(params);	
+		});		
+	},
+	renderPhoto: function(data){
+		var PhotoProfile = "";
+		
+		for(x = 0; x < 1; x++){
+			var item = data['userphoto'][x];
+
+			PhotoProfile += template.imageProfile.replace("{IMG}",item.usp_photo).replace("{NAME}",item.usp_firstname+' '+item.usp_lastname);
+			
+		}	
+		document.getElementById('box-img-profile').innerHTML = PhotoProfile;
+	},
+	renderUserfriends: function(data){
+		var FriendPhoto = "";
+
+		var tamanho = data['userfriends'].length;
+
+		for(x = 0; x < tamanho; x++){
+			var item = data['userfriends'][x];
+
+			FriendPhoto += template.imageFriends.replace("{IMG}",item.usp_photo).replace("{ID}",item.acc_id);
+		}	
+		document.getElementById('box-img-friends').innerHTML = template.componentImgFriends.replace("{LIST_IMG}",FriendPhoto);
+
+	},
+	render: function(){
+		document.getElementById('content-right-top').style.display = "none";
+		var params = {
+                url: service.getBaseUrl()+"getNotifications.php",
+                global: false,
+                type: "POST",
+                dataType: "json",
+                async: true,
+                data: {
+        
+               	},
+                success: function(data) {
+                	document.getElementById('box-menu-profile').innerHTML = template.componentMenuProfile.replace("{USERID}", data['uid'])
+                	.replace("{PROFILE}",i18n[whatoodo.lang].TEXT_PROFILE).replace("{EVENTS}",i18n[whatoodo.lang].TEXT_EVENTS)
+                	.replace("{FRIENDS}",i18n[whatoodo.lang].TEXT_FRIENDS).replace("{COUNT}", ' + '+data['pendingEvents'])
+                	.replace("{COUNTFR}",' + '+data['pendingFriends']);
+                },
+                error: function(data) {
+                    wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                }
+            };
+            $.ajax(params);		
+									
+		document.getElementById('box-advertising').innerHTML = template.componentAdvertising.replace("{ADV}",template.advertising.replace("{IMG}","style/img/wild.jpg"));				
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

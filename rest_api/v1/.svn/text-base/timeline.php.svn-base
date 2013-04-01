@@ -1,0 +1,128 @@
+<?php 
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+//session_start();
+session_start();
+$city = $_GET['city'];
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+
+$timeline = "";
+$week_days = Array();
+$week_days[0] = "Sunday";
+$week_days[1] = "Monday";
+$week_days[2] = "Tuesday";
+$week_days[3] = "Wednesday";
+$week_days[4] = "Thursday";
+$week_days[5] = "Friday";
+$week_days[6] = "Saturday";
+
+for($i = 0; $i < 7; $i++){
+   $placeList =  $db->select("SELECT DISTINCT id, name, image, pla_city, pla_country, bus_day_work, rev_average, cos_average, eve_go,
+(CASE confirmed
+WHEN  0 THEN 0
+WHEN  1 THEN 50
+WHEN  2 THEN 100
+WHEN  3 THEN 150
+WHEN  4 THEN 200
+ELSE 200
+END)+
+(CASE my_event
+WHEN '0' THEN 0
+ELSE 5000
+END)+
+(CASE placeinfo.pla_city
+WHEN '$city' THEN 1000
+ELSE 0
+END)+
+(CASE bus_promoday
+WHEN 1 THEN 100
+ELSE 0
+END)+
+(CASE pre_rating_average
+WHEN 1 THEN 50
+WHEN 2 THEN 100
+WHEN 3 THEN 200
+WHEN 4 THEN 400
+WHEN 5 THEN 800
+ELSE 0
+END)+
+(CASE rev_average
+WHEN 1 THEN 50
+WHEN 2 THEN 100
+WHEN 3 THEN 200
+WHEN 4 THEN 400
+WHEN 5 THEN 800
+ELSE 0
+END)+
+(CASE my_review
+WHEN 1 THEN 25
+WHEN 2 THEN 50
+WHEN 3 THEN 100
+WHEN 4 THEN 200
+WHEN 5 THEN 400
+ELSE 0
+END) AS relevance  
+FROM (SELECT DISTINCT cos_average, bus_day_work, placereview.rev_rating AS my_review, pre_rating, placeinfo.cat_id AS place_cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, my_event, pre_rating_average, rev_average, COUNT(reply_event) AS confirmed, IFNULL(eve_go,0) AS eve_go
+    FROM (SELECT DISTINCT cos_average, bus_day_work, bus_day AS bus_day_promo, IFNULL(pre_rating, 0) AS pre_rating, placeinfo.cat_id,cat_name, id, name, image, pla_city, pla_country, bus_promoday, eve_id, IFNULL(eve_name,0) AS my_event, ROUND(IFNULL(AVG(pre_rating),0)) AS pre_rating_average, ROUND(IFNULL(AVG(rev_rating),0)) AS rev_average
+        FROM (SELECT DISTINCT pla_cost, bus_day AS bus_day_work, cat_id, cat_name, place.pla_id AS id, place.pla_name AS name, place.pla_photo AS image, place.pla_city, place.pla_country
+            FROM place,placetags, category, businesstime
+            WHERE place.pla_id = placetags.pla_id
+            AND place.pla_city = '$city'   
+            AND place.pla_status = 'Active'            
+            AND category.cat_name = placetags.plt_tag
+            AND businesstime.pla_id = place.pla_id
+            AND businesstime.bus_day = '".$week_days[$i]."') as placeinfo
+        LEFT JOIN userpreferences ON userpreferences.cat_id = placeinfo.cat_id AND userpreferences.acc_id = '".$_SESSION['loggeduser']['id']."'
+        LEFT JOIN businesstime ON businesstime.pla_id = id AND businesstime.bus_day = '".date("l")."'
+        LEFT JOIN events ON events.pla_id = id AND events.acc_id = '".$_SESSION['loggeduser']['id']."'
+        LEFT JOIN placereview ON placereview.pla_id = id
+        LEFT JOIN cost ON pla_cost = cost.cos_id
+        GROUP BY id)placeinfo
+    LEFT JOIN userevent ON userevent.id_eve = eve_id AND userevent.reply_event = 'Yes'
+    LEFT JOIN placereview ON placereview.pla_id = id AND placereview.acc_id = '".$_SESSION['loggeduser']['id']."'
+    LEFT JOIN events ON events.pla_id = id
+    GROUP BY id) placeinfo
+ORDER BY relevance DESC
+LIMIT 4");
+    //$db->print_last_query();
+ //this query count how many places works in the specified weekday  
+	$placeCounter =  $db->select("SELECT DISTINCT COUNT(*) AS pla_counter
+                	FROM place, businesstime
+ 	                WHERE place.pla_city = '".$city."'
+                	AND businesstime.pla_id = place.pla_id
+                	AND businesstime.bus_day = '".$week_days[$i]."'");
+	$counter = $db->get_row($placeCounter);
+
+	for($j = 0; $j < 4; $j++) {
+		$place = $db->get_row($placeList);
+		if ($place) {
+			if ($place['image']) {
+         		$place['image'] = urlimage($place['image'], "places");  
+       		} else {
+				$place['image'] = "images/camera-icon.png";
+			}
+     	}
+	//$placename = $place['name'];
+	$timeline .= '{"id":"'.$place['id'].'","placename":"'.$place['name'].'","placeimage":"'.$place['image'].'","placecity":"'.$place['pla_city'].'", "placecountry":"'.$place['pla_country'].'","workday":"'.$place['bus_day_work'].'","average":"'.$place['rev_average'].'", "cosaverage":"'.$place['cos_average'].'","relevance":"'.$place['relevance'].'","eve_go":"'.$place['eve_go'].'","placecounter":"'.$counter['pla_counter'].'"},';
+
+   }
+	
+}
+$timeline = substr($timeline,0,-2);
+$timeline .= '}' ;
+?>
+{
+"timeline": [<?php echo $timeline; ?>]
+}

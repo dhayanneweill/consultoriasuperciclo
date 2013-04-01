@@ -1,0 +1,574 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.profileevent = {
+	init: function(){
+		if (whatoodo.user != null && whatoodo.user != 'undefined') {
+			document.getElementById('profileevent').innerHTML = template.content004;
+		
+    		whatoodo.profileevent.getEventdata(GET["events"]);
+    		whatoodo.profileevent.renderInformation(GET["events"]);
+    		whatoodo.profileevent.addComment(GET["events"]);
+    	
+			$('.new-title').hide();
+			$('#ndate').hide();
+			$('.new-cost').hide();
+		
+			service.getSuggestion(function(data) {
+				whatoodo.profileevent.cache = data;
+				whatoodo.profileevent.render(data);
+			}, function() {
+				alert("erro");
+			});
+		}else{
+			lib.views.set('home', {}, whatoodo);
+		}
+	},
+	
+	bind: function(){
+	},
+	getEventdata: function(data){
+		var params = {
+               url: service.getBaseUrl()+"getEventData.php",
+               global: false,
+               type: "POST",
+               data: {
+               		eventid : data
+               },
+               dataType: "json",
+               async: false,
+			   success: function(data) {
+               			var PhotoEvent = "";
+		
+						for(x = 0; x < 1; x++){
+							var item = data['eventData'][x];
+							
+							if(item.acc_id == item.userowner){
+								PhotoEvent += '<a class="changephoto" href="index.php?page=ChangePhotoEvent&events='+item.id+'"><span class="changephoto_icon"></span><label>Change Photo</label></a>';
+							}
+							PhotoEvent += template.imageEvent.replace("{IMG}",item.photo);							
+				
+						}	
+						
+						var confirmFriends = "";
+						var tamanho = data['confirmFriends'].length;
+						
+						confirmFriends += '<div class="confirm-friend">'+'<div class="label-name">Confirm Friends</div>';
+						
+						for(x = 0; x < tamanho; x++){
+							var item = data['confirmFriends'][x];
+							
+							confirmFriends += template.confirmFriend.replace("{IMGUSER}",item.photo);	
+						}
+						
+						confirmFriends += "</div>";
+						
+						var noFriend = "";
+						var tamanho = data['noPresences'].length;
+						
+						noFriend += '<div class="confirm-friend">'+'<div class="label-name">No Presence</div>';
+						
+						for(x = 0; x < tamanho; x++){
+							var item = data['noPresences'][x];
+							
+							noFriend += template.confirmFriend.replace("{IMGUSER}",item.photo);	
+						}
+						
+						noFriend += "</div>";
+						
+						var Pending = "";
+						var tamanho = data['pendingUsers'].length;
+						
+						Pending += '<div class="confirm-friend">'+'<div class="label-name">Pending</div>';
+						
+						for(x = 0; x < tamanho; x++){
+							var item = data['pendingUsers'][x];
+							
+							Pending += template.PendingFriend.replace("{IMGUSER}",item.photo);	
+						}
+						
+						Pending += "</div>";
+						
+						var render = PhotoEvent + confirmFriends + noFriend + Pending;
+						document.getElementById('box-img-profile').innerHTML = render;
+               },
+               error: function(data) {
+               		alert('Get pid');
+               }
+         };
+         $.ajax(params);
+	},
+	renderInformation: function(data){
+		var idevent = data;
+		var params = {
+               url: service.getBaseUrl()+"getInformation.php",
+               global: false,
+               type: "POST",
+               data: {
+               		eventid : data
+               },
+               dataType: "json",
+               async: false,
+			   success: function(data) {
+               		var Middle = "";
+               		
+               		var tamanho = data['pending'].length;
+               		
+               		for(x = 0; x < tamanho; x++){
+               			var item = data['pending'][x];
+               			
+               			if(item.userid == item.userlogged){
+               				Middle += '<div class="frame-middle"><div class="profile-event">'+
+												'<div class="profile-event-name">'+
+													'<div class="diag-buttonbar">'+
+               						  					'<div input id="addevent-confirm" class="button green">I\'M IN</div>'+
+               						  					'<div input id="addevent-cancel" class="button red">NO</div>'+
+               						  				'</div>'+
+               						  			'</div>'+
+               						  	'</div>';
+               			}
+               		}
+               		
+               		for(x = 0; x < 1; x++){
+               			
+               			var item = data['userowner'][x];
+               			var owner = data['eventData'][x];
+               			if(item.userlogged == owner.userowner){
+               				Middle += '<div class="frame-middle"><div class="profile-event">'+
+												'<div class="profile-event-name">'+
+													'<div class="diag-buttonbar">'+
+               						  					'<div input id="invite-friends" class="button green">INVITE FRIENDS</div>'+
+               						  				'</div>'+
+               						  			'</div>'+
+               						  	'</div>';		
+               			}else if(item.userlogged != item.userid){
+               				Middle += '<div class="frame-middle"><div class="profile-event">'+
+												'<div class="profile-event-name">'+
+													'<div class="diag-buttonbar">'+
+               						  					'<div input id="invite-friends" class="button green">INVITE FRIENDS</div>'+
+               						  				'</div>'+
+               						  			'</div>'+
+               						  	'</div>';
+               			}
+               		}
+               		
+               		for(x = 0; x < 1; x++){
+               			var item = data['eventData'][x];
+               			
+               			if(item.userowner == item.userlogged){
+               					Middle += '<div class="frame-middle">'+
+								'<div class="profile-event">'+
+									'<div class="profile-event-name"><div class="edit-title" id="edit-title">Edit title</div>'+
+										'<div class="new-title">'+
+										'<input type="text" id="title-new" name="title-new">'+
+										'<div class="button green" id="ntitle">New title</div>'+
+										'</div>'+
+									'</div>'+
+								'</div>'+
+								'</div>';
+								Middle += '<div class="frame-middle">'+
+													'<div class="profile-info-event">'+
+														'<div class="edit-info" id="edit-info">Edit Description</div>'+
+														'<div class="edit-place" id="edit-place">Edit Address</div>'+
+														'<div class="edit-cellphone" id="edit-cellphone">Edit Cellphone</div>'+
+														'<div class="edit-phone" id="edit-phone">Edit Phone</div>'+
+														'<div class="edit-date" id="edit-date">Edit Date</div>'+
+														'<div class="edit-cost" id="edit-cost">Edit Cost</div>'+
+													'</div>'+
+											'</div>';
+               			}
+               			Middle += template.ComponentMiddleEvent.replace("{EVENAME}",item.eve_name).replace("{DESCRIPTIONTITLE}","EVENT DESCRIPTION")
+               			.replace("{ICONDESC}","style/img/icons/icon_status.png").replace("{INFO}",item.eventInfo).replace("{PLACETITLE}","PLACE INFO")
+               			.replace("{ICONPLACE}","style/img/icons/icon_places.png").replace("{PLACESEVENT}","style/img/icons/icon_places.png")
+               			.replace("{ADDRESS}",item.where).replace("{IMGCELL}","style/img/icons/icon_cellphone.png").replace("{CELLPHOT}",item.cellphone)
+               			.replace("{IMGTEL}","style/img/icons/icon_telephone.png").replace("{TELL}",item.eve_phone).replace("{IMGCALENDAR}","style/img/icons/icon_calendar.png")
+               			.replace("{DATE}",item.when).replace("{ICONMONEY}","style/img/icons/white_money_icon_b.png").replace("{PRICE}",item.cost)
+               			.replace("{TEXTCOMMENT}","POST COMMENT");
+               		}
+               		
+               		var comments = "";
+			   			
+               		var tamanho = data['comments'].length;
+						
+					for(x = 0; x < tamanho; x++){
+						var item = data['comments'][x];
+							
+						comments += template.componentCommentEvent.replace("{USERTHUMB}",item.photo).replace("{USERNAME}",item.name)
+						.replace("{COMMENT}",item.comment);	
+					}
+               		render = Middle + comments;
+               		document.getElementById('box-list').innerHTML = render;
+               },
+               error: function(data) {
+               		alert('Get pid');
+               }
+         };
+         $.ajax(params);
+         $('#ndescription').click(function (){
+         	var params = {
+                        url: service.getBaseUrl()+"changeEventDescription.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                            description: $('#description-new').val(),
+                            eventid: data
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                        	history.go(0);
+                        },
+                        error: function(data) {
+                            $('#message-post-loader').remove();
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+            	$.ajax(params);
+         });
+         $('#addevent-cancel').click(function(){
+        	var params = {
+            	url: service.getBaseUrl()+"noPresence.php",
+                global: false,
+                type: "POST",
+                data: {
+                	eventid : idevent
+                },
+                dataType: "json",
+                async: true,
+                success: function(data) {
+                	history.go(0);
+                },
+                error: function(data) {
+                	$('#message-post-loader').remove();
+                    wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                }
+             };
+             $.ajax(params);
+        });
+        $('#addevent-confirm').click(function(){
+        		var params = {
+                        url: service.getBaseUrl()+"addPresence.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                            eventid : idevent
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                        	history.go(0);
+                        },
+                        error: function(data) {
+                            $('#message-post-loader').remove();
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+            	$.ajax(params);
+        	});
+         $('#nlocal').click(function (){
+        		var params = {
+                        url: service.getBaseUrl()+"changeEventLocal.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                            "local": $('#local-new').val(),
+                            eventid: idevent
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                        	history.go(0);
+                        },
+                        error: function(data) {
+                            $('#message-post-loader').remove();
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+            	$.ajax(params);
+        	});
+        	$('#ncellphone').click(function (){
+        		var params = {
+                        url: service.getBaseUrl()+"changeEventCellphone.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                            cellphone: $('#cellphone-new').val(),
+                            eventid: idevent
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                        	history.go(0);
+                        },
+                        error: function(data) {
+                            $('#message-post-loader').remove();
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+            	$.ajax(params);
+        	});
+         $('#nphone').click(function (){
+        		var params = {
+                        url: service.getBaseUrl()+"changeEventPhone.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                            phone: $('#phone-new').val(),
+                            eventid: idevent
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                        	history.go(0);
+                        },
+                        error: function(data) {
+                            $('#message-post-loader').remove();
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+            	$.ajax(params);
+        	});
+         $('#change-date-event').datepicker({
+			dateFormat : 'yy/mm/dd',
+			yearRange : '0:+10',
+			changeMonth : true,
+			changeYear : true,
+			altField : '#change-date-event'
+		});
+         $('#edit-date').click(function (){
+		    $('#change-date-event').position({
+				of : $('#edit-date'),
+				my : 'right bottom',
+				at : 'left top',
+				offset : '90',
+				collision : 'none'
+			});
+			$('#change-date-event').datepicker("show");
+			$('#ndate').show();
+		 });
+		 $('#ndate').click(function (){
+		 	var params = {
+                        url: service.getBaseUrl()+"changeEventDate.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                            date: $('#change-date-event').val(),
+                            eventid: idevent
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                        	history.go(0);
+                        },
+                        error: function(data) {
+                            $('#message-post-loader').remove();
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+            	$.ajax(params);
+        	});
+         $('#ncost').click(function(){
+        		var params = {
+                        url: service.getBaseUrl()+"changeEventCost.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                            cost: $('#cost-new').val(),
+                            eventid: idevent
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                        	history.go(0);
+                        },
+                        error: function(data) {
+                            $('#message-post-loader').remove();
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+            	$.ajax(params);
+         });
+         $('#edit-cost').click(function (){
+         	$('.new-cost').show();
+         });
+         $('#edit-phone').click(function (){
+         	$('.new-phone').show();
+         });
+         $('#edit-cellphone').click(function (){
+         	$('.new-cellphone').show();
+         });
+         $('#edit-place').click(function (){
+         	$('.new-local').show();
+         });
+         $('#edit-info').click(function (){
+         	$('.new-description').show();
+         });
+         $('#edit-title').click(function (){
+              $('.new-title').show();
+              $('#eve-name').hide(); 
+          });
+          $('#ntitle').click(function (){
+			  var params = {
+                        url: service.getBaseUrl()+"changeEventTitle.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                        	 eventid : data,
+                             title : $('#title-new').val()
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                        	//history.go(0);
+                        },
+                        error: function(data) {
+                            $('#message-post-loader').remove();
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+            	$.ajax(params);
+		  });
+		  $('#invite-friends').click(function (){
+		  		$('#friends-invite').show();
+		  		var params = {
+                        url: service.getBaseUrl()+"getFriendsInvite.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                             eventid: data
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                        	var tamanho = data['FriendsInvite'].length;
+							var users = "";
+							for(x = 0; x < tamanho; x++){
+								var item = data['FriendsInvite'][x];
+								users += '<div class="users">'+
+											'<input class="checkbox-this" type="checkbox" name="friend" value='+item.ident+'">'+
+											'<img class="userphoto" src='+item.usp_photo+' /></input>'+
+												' '+item.usp_firstname+' '+item.usp_lastname+
+										'</div>';
+							}
+                        	$('#friends-invite').children().html('<div class="up">'+
+  																	'Invite Friends'+
+  																'</div>'+
+  																'<div class="select-all">'+
+																	'<div input id="select-all" class="button green">SELECT ALL</div>'+
+																'</div>'+
+																'<div class="view-all">'+
+																	''+users+
+																	'<div class="confirmation">'+
+																		'<div input id="cancel-invite" class="button red">CANCEL</div>'+
+																		'<div input id="invite-this" class="button green">INVITE</div>'+
+																	'</div>'+
+																'</div>');
+							$('#select-all').toggle(
+        						function(){
+     			   					$("input:checkbox").attr("checked",true);
+    							},
+    							function(){
+        							$("input:checkbox").attr("checked",false);
+    							}
+        					)
+        					$('#cancel-invite').click(function (){
+        						$('#friends-invite').hide();
+        					});
+        					$('#invite-this').click(function(){
+        						var selectedItems = new Array();
+        						$("input[@name='friend[]']:checked").each(function() {selectedItems.push($(this).val());});
+        						var params = {
+                        			url: service.getBaseUrl()+"inviteFriends.php",
+                        			global: false,
+                        			type: "POST",
+                        			data: {
+                            			friends: selectedItems,
+                            			eventid: idevent
+                        			},
+                        			dataType: "json",
+                        			async: true,
+                        			success: function(data) {
+                        				
+                        				//history.go(0);
+                        			},
+                        			error: function(data) {
+                            			$('#message-post-loader').remove();
+                            			wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        			}
+                    			};
+                				wtd.alert.showLoader();
+            					$.ajax(params);
+        					});
+                        },
+                        error: function(data) {
+                            $('#message-post-loader').remove();
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+            	$.ajax(params);
+		  });
+	},
+	addComment: function(data){
+		$('#post-comment').click(function (){
+			if($('#comment-event-message').val() == ''){
+        			wtd.alert.showMessage("The message is empty!");
+        		}else{
+        		var params = {
+                        url:  service.getBaseUrl() + "addEventComment.php",
+                        global: false,
+                        type: "POST",
+                        data: {
+                            event: data,
+                            comment: $('#comment-event-message').val()
+                        },
+                        dataType: "json",
+                        async: true,
+                        success: function(data) {
+                        	history.go(0);
+                        },
+                        error: function(data) {
+                            $('#message-post-loader').remove();
+                            wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                        }
+                    };
+            	$.ajax(params);
+           		}
+		});		
+	},
+	render: function(){
+		whatoodo.profileevent.renderSuggestion();
+		document.getElementById('box-advertising').innerHTML = template.componentAdvertising.replace("{ADV}",template.advertising.replace("{IMG}","style/img/wild.jpg"));				
+	},
+	renderSuggestion : function() {
+		var data = whatoodo.profileevent.cache.splice(0, 1);
+		data = data[0];
+		var suggestionHTML = "";
+		
+		
+		if( typeof (data) != 'undefined') {
+			suggestionHTML = template.suggestions.replace("{FRIENDID}",data['acc_id'])
+			.replace("{IMG}", data['usp_photo'])
+			.replace("{FRIENDID}",data['acc_id'])
+			.replace("{NAME}",data['usp_firstname']+" "+data['usp_lastname'])
+			.replace("{TEXT}","mutual friends")
+			.replace("{MUTUALFRIENDS}",data['mutual_friends'])
+			.replace("{ACTIONLINK}",data['action_link'])
+			.replace("{ACTION}",data['action']);
+			document.getElementById('box-suggestions').innerHTML = template.componentSuggestions.replace("{SUGG}", suggestionHTML);
+			//$('#suggestion-'+i).children('.suggestions-message').hide();
+			$('#suggestion-close').click(function() {
+				
+				//$('#suggestion-'+i).fadeOut('fast', function() {
+					//$('#suggestion-'+i).html('<div class="suggestions-message"></div>');
+					//$('#suggestion-'+i).show();
+					whatoodo.profileevent.renderSuggestion();
+				//});
+			});
+		} else {
+			document.getElementById('suggestions-container').innerHTML = '<div class="suggestions-message">No suggestions for now! Please try again later.</div>';
+		}
+	
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

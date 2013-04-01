@@ -1,0 +1,26 @@
+<?php
+class IPData {
+	public static function getIpData() {
+		//Geolocation Processing and Caching
+		if (!isset($_SESSION['ipdata'])) {
+			$ip = $_SERVER['REMOTE_ADDR'];
+			if ($ip == '127.0.0.1' || $ip == '::1' || substr($ip, 0, 3) == "192") {
+				$ip = getenv("HTTP_X_FORWARDED_FOR");
+			}
+			$response = file_get_contents('http://api.ipinfodb.com/v3/ip-city/?key=e456930218ef16c3210ed505e5d4164caebff99f15a4ddce7ae33c7457ab074c&output=json&timezone=true&ip='.$ip);
+			$ipdata = json_decode($response, true);
+			if ($response == false || $ipdata['Status'] != "OK" || $ipdata['City'] == "") {
+				$ipdata = json_decode('{ "Status" : "DEBUG", "CountryCode" : "BR", "CountryName" : "Brazil", "RegionCode" : "4", "RegionName" : "Amazonas", "City" : "Manaus", "ZipPostalCode" : "", "Latitude" : "-3.10641", "Longitude" : "-60.02643", "Timezone" : "0", "Gmtoffset" : "0", "Dstoffset" : "0", "TimezoneName" : "", "Isdst" : "", "Ip" : "200.160.99.67" }', true);
+			}
+			$_SESSION['ipdata'] = Array();
+			$_SESSION['ipdata']['city'] = $ipdata['City'];
+			$_SESSION['ipdata']['region'] = $ipdata['RegionName'];
+			$_SESSION['ipdata']['country'] = $ipdata['CountryName'];
+			$_SESSION['ipdata']['countrycode'] = $ipdata['CountryCode'];
+			$_SESSION['ipdata']['latitude'] = $ipdata['Latitude'];
+			$_SESSION['ipdata']['longitude'] = $ipdata['Longitude'];
+		}
+		return $_SESSION['ipdata'];
+	}
+}
+?>

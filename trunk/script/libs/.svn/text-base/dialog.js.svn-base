@@ -1,0 +1,328 @@
+//Classe dialog
+$(document).ready( function() {
+    wtd = window.wtd || {};
+    wtd.alert = {
+        callback: null,
+        showMessage: function(message, args) {
+            //Valores default
+            args = $.extend({
+                btnValue: "Confirm",
+                timeout: 3000,
+                callback: null
+            }, args);
+            wtd.alert.callback = args.callback;
+            $('#alert-message').html(message);
+            if (args['buttons']) {
+                $('#alert-buttons').html(args['buttons'].replace('&confirm', '<input id="alert-confirm" class="button" type="button" value="'+args['btnValue']+'" />'));
+            } else {
+                $('#alert-buttons').html('<input id="alert-confirm" class="button" type="button" value="'+args['btnValue']+'" />');
+            }
+            $('#alert-confirm').val(args['btnValue']);
+            $('#alert').css('top', window.pageYOffset + 120);
+            $('#dark').height($(document).height());
+            $('#dark').show();
+            $('#alert').show( function() {
+                wtd.alert.bind();
+                //Timeout implementation
+                if (args['timeout'] != null)
+                    $.doTimeout('alertTimer', args['timeout'], function() {
+                        wtd.alert.hide();
+                    });
+            });
+        },
+        showConfirm: function(message, args) {
+            //Valores default
+            args = $.extend({
+                btnConfirm: "Confirm",
+                btnCancel: "Cancel",
+                callback: null
+            }, args);
+            wtd.alert.callback = args.callback;
+            $('#alert-message').html(message);
+            $('#alert-buttons').html('<input id="alert-confirm" class="button" type="button" value="'+args['btnConfirm']+'" /> <input id="alert-cancel" class="button red" type="button" value="'+args['btnCancel']+'" />');
+            $('#alert').css('top', window.pageYOffset + 120);
+            $('#dark').height($(document).height());
+            $('#dark').show();
+            $('#alert').show( function() {
+                wtd.alert.bind();
+            });
+            
+        },
+        showLoader: function() {
+            $('#alert-message').html("<div style='text-align: center; padding-top: 90px;'><img src='style/img/loaders/2.gif' /></div>");
+            $('#alert-buttons').html("<p>&nbsp;</p>");
+            $('#alert').css('top', window.pageYOffset + 120);
+            $('#dark').height($(document).height());
+            $('#dark').show();
+            $('#alert').show();
+        },
+        hideLoader: function() {
+            $('#dark').hide();
+            $('#alert').hide();
+        },
+        hide: function() {
+            wtd.alert.unbind();
+            $('#dark').hide();
+            $('#alert').fadeOut(wtd.alert.callback);
+        },
+        //Click events
+        bind: function() {
+            $('#alert-confirm').click( function() {
+                $.doTimeout('alertTimer', false);
+                wtd.alert.hide();
+            });
+            $('#alert-cancel').click( function() {
+                wtd.alert.callback = null;
+                wtd.alert.hide();
+            });
+            
+        },
+        unbind: function() {
+            $('#alert-confirm').unbind();
+        }
+    };
+    window.wtd = wtd;
+}).ready( function() {
+    //Elementos UI
+    //Accordion
+/*     $("#addplace-who").tokenInput("services/?service=getFriendsCache", {});
+     $("#addplace-where").tokenInput("services/?service=getPlacesCache", {tokenLimit: 1});
+     $('#wtd-admin').click(function (){
+     	$('#wtd-as-page').show();
+     	$('#dark').show();
+     });
+     $('#login-btn').click( function() {
+                if (!$("#login-form").valid()) {
+                    return;
+                }
+                var data = ({
+                        username: $('#username-ipt').val(),
+                        password: sha1($('#password-ipt').val()),
+                    }), params = {
+                    url: 'services/?service=login',
+                    data: {
+                        data: data
+                    },
+                    type: 'POST',
+                    dataType: 'text',
+                    success: function(msg) {
+                        if (msg == "OK") {
+                            $('#login-form').submit();
+                        } else {
+                            wtd.alert.showMessage("Invalid user or password!");
+                        }
+                    },
+                    error: function(data) {
+                        wtd.alert.showMessage("Our servers are currently unavaiable. Please try again later!");
+                    }
+                };
+                $.ajax(params);
+            });
+    $('.accordion-header').click( function() {
+        $(".accordion-body").slideUp('slow', function() {
+            $(this).siblings().addClass('unselected');
+        });
+        if (typeof(wtd.last) != 'undefined' && this != wtd.last) {
+            $(this).siblings(".accordion-body").slideDown('slow', function() {
+                $(this).removeClass('unselected');
+            });
+        }
+        if (wtd.last != this && typeof(wtd.last) != 'undefined') {
+            wtd.last = this;
+        } else {
+            wtd.last = null;
+        }
+    });
+    //Input File
+    $(".inputFile-field").change( function() {
+        $(this).prev().html($(this).val());
+    });
+}).ready( function() {
+    //Funções iniciais
+    $('#loader').height($(document).height());
+    $('#dark').height($(document).height());
+    $("abbr.timeago").timeago();
+
+    $('#header-logo').click( function() {
+        window.location = "?";
+    });
+    $('#header-form-wtd').focus( function() {
+        if ($('#header-form-wtd').val() == "  WHAT WOULD YOU LIKE TO DO?") {
+            $('#header-form-wtd').val("");
+        }
+    });
+    $('#header-form-wtd').blur( function() {
+        if ($('#header-form-wtd').val() == "") {
+            $('#header-form-wtd').val("  WHAT WOULD YOU LIKE TO DO?");
+        }
+    });
+    //Menu
+    $('#menu-settings-link').click( function() {
+        $('#menu-settings').fadeIn(1, function() {
+            $('body').unbind('click').click( function() {
+                $('#menu-settings').hide();
+                $('body').unbind('click');
+            });
+        });
+    });
+    $('.bottom-addevent').click(function(){
+    	$('#diag-addplace1').show();
+        $('#dark').show();
+    });
+    $('#dark').click(function (){
+        $('#diag-addplace1').hide();
+        $('#wtd-as-page').hide();
+    });
+    $('#addplace-cancel').click(function (){
+        		$('#diag-addplace1').hide();
+        		$('#dark').hide();
+        	});
+        	$('#addplace-confirm').click(function (){
+                		 
+                var place = $('#addplace-where').val();
+                var params = {
+                      url: "services/?service=addEvent",
+                      global: false,
+                      type: "POST",
+                      data: {
+                          where : place,
+                          when : $('#addplace-date').val(),
+                          hour : $('#addplace-hour').val(),
+                          name : $('#addplace-name').val(),
+                                	//wherebug : $('#addplace-where').val)(),
+                		  who : $('#addplace-who').val(),
+                		  info : $('#addplace-info').val(),
+                		  phone : $('#addplace-phone').val(),             					
+                		  cellphone : $('#addplace-cellphone').val(),
+                					
+                	  },
+                      dataType: "json",
+                      async: true,
+                      success: function(data) {
+                         if (data.status) {
+                             wtd.alert.showMessage("New event created successfully!");
+                             timeout: 100000,
+                             window.location = '?page=profileevent&eveid='+data.status;
+                         }
+                     },
+                 error: function(data) {
+                        wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                  }
+            };
+            wtd.alert.showLoader();
+            $.ajax(params);
+        });
+    //Change city
+    $('#btn_changecity').click( function() {
+        //$(this).hide();
+        $('#view-changecity').show().focus();
+        $('.button-up').show();
+        //$('#dark').height($(document).height());
+        //$('#dark').show();
+        // $('#view-changecity').show('slow', function() {
+        //     $('#dark').click( function() {
+        //         //$('#dark').hide();
+        //         $('body').unbind('click');
+        //         $('#view-changecity').fadeOut('slow');
+        //         $('#dark').unbind('click');
+        //     });
+        // });
+    });
+    $('#changecity-input').blur( function() {
+        $(this).hide();
+        $('.button-up').hide();
+        $('#btn_changecity').show();
+    });
+    $('#changecity-input').autocomplete(
+    [ {
+        City: "Manaus",
+        RegionName: "Amazonas",
+        CountryCode: "BR",
+        CountryName: "Brazil"
+    }, {
+        City: "Rio de Janeiro",
+        RegionName: "Rio de Janeiro",
+        CountryCode: "BR",
+        CountryName: "Brazil"
+    }, {
+        City: "São Paulo",
+        RegionName: "São Paulo",
+        CountryCode: "BR",
+        CountryName: "Brazil"
+    }, {
+        City: "New York",
+        RegionName: "New York",
+        CountryCode: "US",
+        CountryName: "United States"
+    } ],
+    {
+        minChars: 1,
+        matchContains: "word",
+        autoFill: false,
+        formatItem: function(row, i, max) {
+            return row.City + " [" + row.RegionName + "]";
+        },
+        formatMatch: function(row, i, max) {
+            return row.City + " " + row.RegionName;
+        },
+        formatResult: function(row) {
+            return row.City;
+        }
+    });
+    $('#changecity-input').result( function(event, data, formatted) {
+        var cityData = data;
+        $('#header-city').html('<img class="loader" src="images/loaders/3.gif" />');
+        var params = {
+            url: "services/?service=setLocation",
+            type: "POST",
+            async: true,
+            dataType: "json",
+            data: {
+                data : {
+                    City: data.City,
+                    RegionName: data.RegionName,
+                    // RegionCode: $(this).attr('RegionCode'),
+                    CountryCode: data.CountryCode,
+                    CountryName: data.CountryName
+                }
+            },
+            success: function(data) {
+                if (data.Status == "OK") {
+                    $('#changecity-input').blur();
+                    $('.header-city-info').hide();
+                    //var cityname = $('#header-city').text(cityData.City);
+                    $('.header-city-info').html('<div id="header-city" class="city"><div class="changecity">'+
+                   '<a href="#" id="btn_changecity">'+cityData.City+'<img src="images/icons/arrow_down.png"/></a></div></div>'+
+                   '<div id="view-changecity"><div class="button-up"><img src="images/icons/arrow_up.png" id="changecity-input"/></div>'+
+                   '<input type="text" id="changecity-input" /></div>');
+                    
+                    $('.header-city-info').show();
+                    //$('#btn_changecity').show();
+                    if (typeof(wtd.view) != 'undefined')
+                        if (typeof(wtd.view.changeCity) != 'undefined')
+                            wtd.view.changeCity(cityData.City);
+                    if (typeof(wtd.timeline) != 'undefined') {
+                        wtd.timeline.getPlaces();
+                    }
+                    $('#changecity-input').val("");
+                    //$('#changecity-input').show("");
+                    $('#temperature').text(data.data.current_condition[0].temp_C + "º");
+                    $('#weatherState').attr("src", data.data.current_condition[0].weatherIconUrl[0].value);
+                } else {
+                    wtd.alert.showMessage("Error while changing your current place. Please try reload the page and try again.");
+                }
+            }, error: function(data) {
+                wtd.alert.showMessage("Cannot connect to the server. Please check your internet connection.");
+            }
+        };
+        $.ajax(params);
+    });
+    $('#loader').fadeOut('slow');
+    //This starts the page
+    if (typeof(wtd.view) != 'undefined') {
+        if (typeof(wtd.view.init) != 'undefined') {
+            wtd.view.init();
+            wtd.view.bind();
+        }
+    }*/
+});

@@ -1,0 +1,58 @@
+<?php
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+$feed = "";
+$result = $db->select("SELECT userloged.acc_id as userowner, hotplaces.usp_photo, hotplaces.usp_firstname, hotplaces.usp_lastname,
+	hotplaces.localname, hotplaces.new_type, hotplaces.new_message, hotplaces.reply, hotplaces.date,
+	hotplaces.owner, hotplaces.userid, hotplaces.new_id, hotplaces.eventgo
+	FROM ((SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname, 
+		place.pla_name AS localname, news.new_type, news.new_message, news.new_inReplyTo AS reply,
+		DATE_FORMAT(news.new_date, '%d/%m/%Y') as date, place.acc_id AS owner, 
+		userprofile.acc_id AS userid, news.new_id, place.pla_cost AS eventgo
+		FROM userprofile, userfriends, news, place WHERE news.acc_id = userfriends.usf_id 
+		AND news.new_inReplyTo = place.pla_id  
+		AND userfriends.usf_id = userprofile.acc_id ) 
+				UNION
+		(SELECT userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname,
+		 events.eve_name AS localname, news.new_type, news.new_message, news.new_mention AS reply,
+		 DATE_FORMAT(news.new_date, '%d/%m/%Y') as date, events.acc_id AS owner, 
+		 userprofile.acc_id AS userid, news.new_id, events.eve_id AS eventgo FROM userprofile,
+	 	 userevent, events, userfriends, news 
+		 WHERE userevent.reply_event = 'yes'
+		 AND userfriends.usf_id = userevent.acc_id 
+		 AND userevent.acc_id = userprofile.acc_id 
+		 AND events.eve_id = userevent.id_eve 
+		 AND news.acc_id = userfriends.usf_id 
+		 AND news.new_mention = events.eve_id )) AS hotplaces CROSS JOIN userprofile AS userloged 
+		 WHERE userloged.acc_id = '".$_SESSION['loggeduser']['id']."' ORDER BY new_id DESC LIMIT 0,25");
+
+while ($row = $db->get_row($result)) {
+	$row['usp_photo'] = urlimage($row['usp_photo'], "user");
+	$row['userowner'] = trim($row['userowner'],0);
+	$username = $row['usp_firstname'].' '.$row['usp_lastname'];
+	$feed .= '{"userowner":"'.$row['userowner'].'","userphoto":"'.$row['usp_photo'].'","username":"'.$username.'","userlocal":"'.$row['localname'].'",
+"type":"'.$row['new_type'].'","usermessage":"'.$row['new_message'].'","reply":"'.$row['reply'].'","date":"'.$row['date'].'", "owner":"'.$row['owner'].'","userid":"'.$row['userid'].'","new_id":"'.$row['new_id'].'","eventgo":"'.$row['eventgo'].'"},';
+
+}
+$feed = substr($feed,0,-2);
+$feed .= '}' ;
+?>
+
+{
+"feed":[<?php echo $feed;?>]
+}
+

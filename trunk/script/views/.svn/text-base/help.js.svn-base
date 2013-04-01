@@ -1,0 +1,23 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.help = {
+	init: function(){
+		document.getElementById('help').innerHTML = template.content002;
+        		
+		whatoodo.help.render();
+		whatoodo.help.bind();
+	},
+	bind: function(){
+	},
+	render: function(data){
+	    document.getElementById('content-right-top').style.display = "none";
+	    
+	    document.getElementById('help').innerHTML = template.componentHelp.replace("{PARAM01}","Dear user,")
+	    .replace("{PARAM02}","We are working on the HELP files to make the usage of Whatoodo even easier and clear.")
+	    .replace("{PARAM03}","If you are facing any problem, please contact us at contact@whatoodo.com.")
+	    .replace("{PARAM04}","Whatoodo team");
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

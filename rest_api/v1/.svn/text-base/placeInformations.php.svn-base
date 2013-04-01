@@ -1,0 +1,62 @@
+<?php
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+$place = $_POST['pid'];
+$date = date("Y-m-d");
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+$returnPlacePhoto = Array();
+
+$result = $db->select("SELECT * FROM place WHERE pla_id = '".$place."' ");
+$result = $db->get_row($result);
+
+$result['pla_photo'] = urlimage($result['pla_photo'], "places");
+$result['userLogged'] = $_SESSION['loggeduser']['id']; 
+array_push($returnPlacePhoto, $result);
+
+
+$returnFanPlace = Array();
+$fanplace = $db->select("SELECT * FROM likeplace WHERE pla_id = '".$place."' AND acc_id = '".$_SESSION['loggeduser']['id']."'");
+$fanplace = $db->get_row($fanplace);
+//$fanplace['userlogged'] = $_SESSION['loggeduser']['id'];
+if($fanplace){
+	array_push($returnFanPlace, $fanplace);	
+}else{
+	$fanplace['friend'] = 'no';
+	array_push($returnFanPlace, $fanplace);
+}
+
+$returnNFans = Array();
+$nfans = $db->select_one("SELECT COUNT(1) AS fans FROM likeplace WHERE pla_id = '".$place."'");
+if ($nfans > 0) {
+    $fans['fans'] = $nfans;
+	array_push($returnNFans, $nfans);
+}else{
+	$fans['fans'] = '0';
+	array_push($returnNFans, $nfans);
+}
+
+
+$returnPendingEventPlace = Array();
+$pendingEventPlace = $db->select_one('SELECT COUNT(events.pla_id) AS pla_id FROM events WHERE events.pla_id = "'.$place.'" AND events.eve_when >= "'.$date.'"');
+if ($pendingEventPlace > 0) {
+    $pending['pendingEventsPlace'] = $pendingEventPlace;
+	//array_push($returnPendingEventPlace, $pending);
+}else{
+	$pending['pendingEventsPlace'] = '0';
+	//array_push($returnPendingEventPlace, $pending);
+}
+
+echo json_encode(Array("placephoto" => $returnPlacePhoto, "fanplace" => $fanplace, "numfans" => $fans, "events" => $pending));
+
+?>

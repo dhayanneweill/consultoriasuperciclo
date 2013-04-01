@@ -1,0 +1,23 @@
+<?php
+//Raw protection 
+include_once 'config.php';
+include_once 'query.php';
+header('Content-Type: text/json; charset=UTF-8');
+
+//Gathers data
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+$email = mysql_escape_string($_POST['email']);
+
+$result = $db->select_one("SELECT acc_email FROM useraccount WHERE acc_email = '$email'");
+
+if ($result) {
+  $return = array();
+  $return['status'] = "ALREADYTAKEN";
+  die(json_encode($return));
+} else {
+  die(json_encode(Array("status" => "OK")));
+} 
+?>

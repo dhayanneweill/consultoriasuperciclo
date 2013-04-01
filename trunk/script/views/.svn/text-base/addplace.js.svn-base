@@ -1,0 +1,461 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.addplace = {
+	dayitemid: 0,
+	data : undefined,
+	init : function() {
+		if (whatoodo.user != null && whatoodo.user != 'undefined') {
+			document.getElementById('addplace').innerHTML = template.componentLoading;
+			service.getAddplace(function(data) {
+				whatoodo.addplace.data = data;
+				whatoodo.addplace.render(data);
+				var value = $('#place-category :first-child').val();
+				whatoodo.addplace.selectCategory(value);
+				whatoodo.addplace.bind();
+			}, function() {
+				alert("Erro do getRegister na pagina addplace");
+			});
+		}else{
+			lib.views.set('home', {}, whatoodo);
+		}
+	},
+	bind : function() {
+		
+		$('#place-category').change(function() {
+			var value = this.value;
+			whatoodo.addplace.selectCategory(value);
+		});
+		$('#confirm-place-info').click(function() {
+
+			var parking;
+			if($('[name|="parking"]:checked').val() == undefined) {
+				parking = 0;
+			} else {
+				parking = 1;
+			}
+			var accessible;
+			if($('[name|="accessible"]:checked').val() == undefined) {
+				accessible = 0;
+			} else {
+				accessible = 1;
+			}
+			var delivery;
+			if($('[name|="delivery"]:checked').val() == undefined) {
+				delivery = 0;
+			} else {
+				delivery = 1;
+			}
+			var smoking;
+			if($('[name|="smoking"]:checked').val() == undefined) {
+				smoking = 0;
+			} else {
+				smoking = 1;
+			}
+			var livemusic;
+			if($('[name|="livemusic"]:checked').val() == undefined) {
+				livemusic = 0;
+			} else {
+				livemusic = 1;
+			}
+			var playroom;
+			if($('[name|="playroom"]:checked').val() == undefined) {
+				playroom = 0;
+			} else {
+				playroom = 1;
+			}
+			var wifi;
+			if($('[name|="wifi"]:checked').val() == undefined) {
+				wifi = 0;
+			} else {
+				wifi = 1;
+			}
+			var waiter;
+			if($('[name|="waiter"]:checked').val() == undefined) {
+				waiter = 0;
+			} else {
+				waiter = 1;
+			}
+			var reservation;
+			if($('[name|="reservation"]:checked').val() == undefined) {
+				reservation = 0;
+			} else {
+				reservation = 1;
+			}
+
+			var selected_cards = Array();
+			$('.cards').each(function(index, value) {
+				selected_cards.push($(value).val());
+			});
+			var selected_days = Array();
+			$('.week-days-select').each(function(index, value) {
+				selected_days.push($(value).val());
+			});
+			var start_hours = Array();
+			$('.start-hour-select').each(function(index, value) {
+				start_hours.push($(value).val());
+			});
+			var end_hours = Array();
+			$('.end-hour-select').each(function(index, value) {
+				end_hours.push($(value).val());
+			});
+			var promo_days = Array();
+			$('.promo-day').each(function(i) {
+				if($(this).attr('checked')) {
+					promo_days.push(1);
+				} else {
+					promo_days.push(0);
+				}
+			});
+			var subcategories = Array();
+			$('.subcategory-checkbox').each(function(i) {
+				if($(this).attr('checked')) {
+					subcategories.push($(this).siblings().text());
+				} else {
+					subcategories.push("");
+				}
+			});
+			var params = {
+				url : service.getBaseUrl() + "setPlace.php",
+				global : false,
+				type : "POST",
+				data : {
+					name : $('#name').val(),
+					description : $('#description').val(),
+					address : $('#form-input-address').val(),
+					city : $('#place-city').val(),
+					state : $('#place-state').val(),
+					country : $('#place-country').val(),
+					parking : parking,
+					accessible : accessible,
+					delivery : delivery,
+					smoking : smoking,
+					livemusic : livemusic,
+					playroom : playroom,
+					wifi : wifi,
+					waiter : waiter,
+					reservation : reservation,
+					mediumcost : $('#medium-cost').val(),
+					phone : $('#place-phone-number').val(),
+					cellphone : $('#place-cellphone-number').val(),
+					// twitter: $('[name|="twitter-user"]').val(),
+					email : $('#place-email').val(),
+					website : $('#place-website').val(),
+					days : selected_days,
+					start : start_hours,
+					end : end_hours,
+					promodays : promo_days,
+					cards : selected_cards,
+					placecategory : $('#place-category option:selected').text(),
+					subcategory : subcategories,
+					othercategories : $('#other-category').val()
+
+				},
+				dataType : "json",
+				async : true,
+				success : function(data) {
+					if(data.status == "OK") {
+						wtd.alert.showMessage("New place created successfully!");
+						history.go(-1);
+					} else if(data.status == "ERROR" && data.errormsg)
+						wtd.alert.showMessage(data.errormsg);
+					else
+						wtd.alert.showMessage("We got an internal service error, please try again later.");
+				},
+				error : function(data) {
+					wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+
+				},
+				// error: function(data) {
+				// wtd.alert.showMessage("Cannot connect to the server.
+				// Please try again later!");
+				// }
+
+			};
+			$.ajax(params);
+			return false;
+		});
+		//		  $('#place-category').change( function() {
+		//              var subcatid = 0;
+		//              var category = $(this).val();
+		//              $('.subcategories-table').remove();
+		//              // alert(wtd.view.categories[category][0]);
+		//              html = '<table class="subcategories-table"border="0"><tr>';
+		//              for (i = 1 ; i < .categories[category].length+1; i++) {
+		//                  html += '<td>'+
+		//                  '<input id="subcat-checkbox-'+subcatid+'" class="subcat-checkbox" type="checkbox" name="'+wtd.view.categories[category][i-1]+'">'+
+		//                  '<div class="features-subcat-text">'+wtd.view.categories[category][i-1]+'</div></td>';
+		//                  if ((i % 3) == 0) {
+		//                      html+='</tr>';
+		//                  }
+		//                  subcatid++;
+		//              }
+		//              html+='</table>';
+		//              $('.subcategories-table-container').append(html);
+		//          });
+
+		// $('#permanent-cards').change( function() {
+		// if ($('#permanent-cards').val() == 0){
+		// $('#add-new-card').hide();
+		// }else{
+		// $('#add-new-card').show();
+		// }
+		// });
+		// $('#permanent-cards').change();
+
+		$('#description').keyup(function(event) {
+			$('#characters-text-counter').text('You can use ' + (140 - this.value.length) + ' more characters.');
+		});
+		$('#add-new-card').click(function() {
+			//disable previous card options
+			$('.payment').children().attr({
+				disabled : "disabled"
+			});
+			$('#cash-only').attr({
+				disabled : "disabled"
+			});
+			// remove selected cards from the select options
+			// makes the html code to append
+			html = '<div class="payment-method-item"><div class="business-payment-text">Payment Accepted:</div><div class="payment"><select class="cards" name="cards" size="1">';
+			for( i = 0; i < whatoodo.addplace.data['paymethod'].length; i++) {
+				html += '<option id="' + whatoodo.addplace.data['paymethod'][i]['id'] + '" class="card-option" value="' + whatoodo.addplace.data['paymethod'][i]['id'] + '"';
+				$('.cards').each(function(index, value) {
+					if($(value).val() == whatoodo.addplace.data['paymethod'][i]['id']) {
+						html += 'disabled="disabled"';
+					}
+				});
+				html += '>' + whatoodo.addplace.data['paymethod'][i]['pay_name'].toUpperCase() + '</option>';
+			}
+			html += '</select></div><div class="cancel-card"><img src="style/img/icons/close.png"/></div></div>';
+			if($('.payment-method-item:last').index() == (whatoodo.addplace.data['paymethod'].length - 2)) {
+				$('#add-new-card').hide();
+			}
+			$('.cancel-card').hide();
+			$('.cancel-card').unbind();
+			$('#payment-items-container').append(html);
+
+			$('.cancel-card').click(function() {
+				if($(this).parent().index() == 0) {
+					$('.payment').children().removeAttr('disabled');
+
+				} else {
+					$(this).parent().remove();
+					$('.cancel-card:last').show();
+					$('.payment:last').children().removeAttr('disabled');
+					$('#add-new-card').show();
+					$('#cash-only').removeAttr('disabled');
+				}
+			});
+		});
+		$('.newday').click(function() {
+			var weekday = new Array(7);
+			weekday[0] = "Sunday";
+			weekday[1] = "Monday";
+			weekday[2] = "Tuesday";
+			weekday[3] = "Wednesday";
+			weekday[4] = "Thursday";
+			weekday[5] = "Friday";
+			weekday[6] = "Saturday";
+
+			$('.day-item select').attr({
+				disabled : "disabled"
+			});
+			$('.day-item input').attr({
+				disabled : "disabled"
+			});
+			HTML = "";
+			HTML += '<div id="day-item-{ID}" class="day-item">Day:<select class="week-days-select">';
+			for( i = 0; i < weekday.length; i++) {
+				HTML += '<option value="' + weekday[i].toUpperCase() + '"';
+				$('.week-days-select').each(function() {
+					if(weekday[i].toUpperCase() == $(this).val().toUpperCase()) {
+						HTML += 'disabled="disabled"';
+					}
+				});
+				HTML += '>' + weekday[i] + '</option>';
+			}
+			HTML += '</select>' + 'Starts at:<select class="start-hour-select">';
+			for( i = 00; i < 24; i++) {
+				HTML += '<option value="' + pad(i, 2) + ':00">' + pad(i, 2) + ':00 ';
+				if(i < 12) {
+					HTML += 'AM';
+				} else {
+					HTML += 'PM';
+				}
+				HTML += '</option>' + '<option value="' + pad(i, 2) + ':30">' + pad(i, 2) + ':30 ';
+				if(i < 12) {
+					HTML += 'AM';
+				} else {
+					HTML += 'PM';
+				}
+				HTML += '</option>';
+			}
+			HTML += '</select>' + 'Ends at:<select class="end-hour-select">';
+			for( i = 00; i < 24; i++) {
+				HTML += '<option value="' + pad(i, 2) + ':00">' + pad(i, 2) + ':00 ';
+				if(i < 12) {
+					HTML += 'AM';
+				} else {
+					HTML += 'PM';
+				}
+				HTML += '</option>' + '<option value="' + pad(i, 2) + ':30">' + pad(i, 2) + ':30 ';
+				if(i < 12) {
+					HTML += 'AM';
+				} else {
+					HTML += 'PM';
+				}
+				HTML += '</option>';
+			}
+			HTML += '</select>' + 'Promoday:<input {1}="{1}" class="promo-day" id="promo-day-{ID}"type="checkbox" name="promoday">' + '<div class="cancel-day"><img src="style/img/icons/close.png"/></div>' + '</div>';
+
+			// makes the html code to append
+			var HTML = HTML.replace("{ID}", whatoodo.addplace.dayitemid).replace("{ID}", whatoodo.addplace.dayitemid);
+			//$('.week-days-select').each(function() {
+			//	HTML.replace('{' + $(this).val().toLowerCase() + '}=""', 'disabled="disabled"');
+			//});
+			if($('.day-item:last').index() == 5) {
+				$('.newday').hide();
+			}
+			$('.cancel-day').hide();
+			$('.cancel-day').unbind();
+			$('#day-options-container').append(HTML);
+
+			$('.cancel-day').click(function() {
+				if($(this).parent().index() == 0) {
+					$('.day-item:last select').removeAttr('disabled');
+					$('.day-item:last input').removeAttr('disabled');
+				} else {
+					$(this).parent().remove();
+					$('.cancel-day:last').show();
+					$('.newday').show();
+					$('.day-item:last select').removeAttr('disabled');
+					$('.day-item:last input').removeAttr('disabled');
+					whatoodo.addplace.dayitemid--;
+				}
+			});
+			//$('.week-days-select:last').append(optionshtml);
+			whatoodo.addplace.dayitemid++;
+		});
+	},
+	selectCategory : function(value) {
+
+		//var name = name.split("-")[1];
+
+		//$('.left-categories').children().removeClass('selected');
+		//$(element).addClass('selected');
+
+		//Color the table
+		$('.subcategory-checkbox').each(function() {
+			if($(this).parent().attr('parent') != value) {
+
+				$(this).parent().css('display', 'none');
+			} else {
+				$(this).parent().css('display', '');
+
+			}
+		});
+	},
+	render : function(data) {
+		
+		var HTML = ""
+		addplaceHTML = template.componentPlacesAdd.replace("{TEXT}","1. NEW PLACE")
+		.replace("{TEXTFIELD}","Name:")
+		.replace("{TEXT}","BASIC INFORMATION:")
+		.replace("{TEXTAREA}","Description:")
+		.replace("{CHARACTER}","You can use 140 more characters.")
+		.replace("{ADDRESS}","Address:")
+		.replace("{CITY}","City:")
+		.replace("{STATE}","State:")
+		.replace("{COUNTRY}","Country:")
+		.replace("{PARKING}","Parking")
+		.replace("{WHEELCHAIR}","Wheelchair Accessible")
+		.replace("{DELIVERY}","Delivery")
+		.replace("{SMOKING}","Smoking")
+		.replace("{LIVEMUSIC}","Live Music")
+		.replace("{PLAYROOM}","Playroom")
+		.replace("{WIFIZONE}","Wifi Zone")
+		.replace("{WAITERSERVICE}","Waiter Service")
+		.replace("{TAKES}","Takes Reservation")
+		.replace("{DIFFERENTIAL}","DIFFERENTIAL")
+		.replace("{TEXT}","BUSINESS INFORMATION")
+		.replace("{TEXT}","Medium Cost:")
+		.replace("{TEXT}","Phone Number:")
+		.replace("{TEXT}","Cell Number:")
+		.replace("{TEXT}","Twitter User:")
+		.replace("{TEXT}","Email:")
+		.replace("{TEXT}","Website:")
+		.replace("{TEXT}","Payment Accepted:")
+		.replace("{TEXT}","Category:")
+		.replace("{TEXT}","Subcategories:")
+		.replace("{TEXT}", "Other Category:")
+		.replace("{SUBMIT}", "CONFIRM");
+		//alert("Teste");
+		document.getElementById('addplace').innerHTML = addplaceHTML;
+		for( i = 0; i < data['countries'].length; i++) {
+			HTML += '<option value="' + data['countries'][i]['iso'] + '">' + data['countries'][i]['countryname'] + '</option>';
+		}
+		document.getElementById('place-country').innerHTML = HTML;
+		HTML = "";
+		for( i = 0; i < data['cost'].length; i++) {
+			HTML += '<option value="' + data['cost'][i]['id'] + '">' + data['cost'][i]['cos_average'] + '</option>';
+		}
+		document.getElementById('medium-cost').innerHTML = HTML;
+		HTML = "";
+		HTML = '<div class="payment-method-item"><div class="business-payment-text">Payment Accepted:</div><div class="payment"><select class="cards" name="cards" size="1">';
+		for( i = 0; i < data['paymethod'].length; i++) {
+			HTML += '<option value="' + data['paymethod'][i]['id'] + '">' + data['paymethod'][i]['pay_name'] + '</option>';
+		}
+		HTML += '</select></div></div>';
+		document.getElementById('payment-items-container').innerHTML = HTML;
+		HTML = "";
+		HTML += 'select id="place-category" name="place-category" class="required">';
+		for( i = 0; i < data['maincat'].length; i++) {
+			HTML += '<option value="' + data['maincat'][i]['id'] + '">' + data['maincat'][i]['categoryname'] + '</option>';
+		}
+		HTML += '</select>';
+		document.getElementById('place-category').innerHTML = HTML;
+		HTML = '<tr class="row">';
+		
+		for( i = 0; i < data['maincat'].length; i++) {
+			var cellcounter = 0;
+			for( j = 0; j < data['categories'].length; j++) {
+				if(cellcounter % 3 == 0 && cellcounter > 0) {
+					HTML += '</tr><tr class="row">';
+				}
+				if(data['maincat'][i]['id'] == data['categories'][j]['catparent']){
+					HTML += '<td class="cell" parent="' + data['categories'][j]['catparent'] + '"><input class="subcategory-checkbox"type="checkbox" id="subcategory-checkbox-' + data['categories'][j]['id'] + '"><p>' + data['categories'][j]['categoryname'] + '</p></td>';
+					cellcounter++;
+				}
+			}
+			HTML += '</tr><tr class="row">';
+		}
+		document.getElementById('subcategories-table').innerHTML = HTML;
+		//escrever o html dos options e dar innerHTML no id do select
+		//alert (data['categories'].length);
+		// for(i=0;i<data['maincat'].length;i++){
+		// maincategoriesHTML += '<option value="' +data['maincat'][i]['id'] + '">' + data['maincat'][i]['categoryname'] + '</option>';
+		// }
+		// document.getElementById('place-category').innerHTML = maincategoriesHTML;
+		//escrever o html da tabela das subcategorias e dar innerHTML no id do container
+		//maincat
+		// subcattable = '<table><tr>';
+		// for(i=0;i<data['maincat'].length;i++){
+		// //categories
+		// for(j=0;j<data['categories'].lenght;j++){
+		// alert(data['categories'][j]['catparent']);
+		// //if(data['maincat'][i]['id'] == data['categories'][j]['catparent']) {
+		// //if(cellcounter % 2 == 0 && cellcounter > 0) {
+		// //	tablesub += "</tr><tr>";
+		// //}
+		// subcattable += '<td id="parent-' + data['maincat'][i]['id'] + '">Teste</td>';
+		// cellcounter++;
+		// //}
+		// }
+		// subcattable += "</tr>";
+		// }
+		// subcattable += '</table>';
+		// document.getElementById('subcategories-table-container').innerHTML = subcattable;
+	},
+	destroy: function(){
+	}
+};
+window.whatoodo = whatoodo;

@@ -1,0 +1,151 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.placeprofilemin = {
+	init: function(){
+		document.getElementById('placeprofilemin').innerHTML = template.content003;
+		
+		whatoodo.placeprofilemin.getPid(GET["pid"]);
+        whatoodo.placeprofilemin.getActivity(GET["pid"]);
+        
+		whatoodo.placeprofilemin.render();
+		whatoodo.placeprofilemin.bind();
+	},
+	bind: function(){
+	},
+	getActivity: function(page){
+		var params = {
+               url: service.getBaseUrl()+"getActivity.php",
+               global: false,
+               type: "POST",
+               data: {
+               		pid : page	
+               },
+               dataType: "json",
+               async: false,
+			   success: function(data) {
+               			var Activity = "";
+						
+						for(x = 0; x < data['place'].length; x++){
+							
+							var item = data['place'][x];
+														
+							Activity += template.PlaceActivityMin.replace("{ACTIVITY}","Recent Activity")
+							.replace("{DESCRIPTION}","PLACE DESCRIPTION")
+							.replace("{IMGDESCRIPTION}","style/img/icons/icon_status.png").replace("{PLACEDESCRIPTION}",item.pla_description)
+							.replace("{INFO}","PLACE INFO").replace("{IMGINFO}","style/img/icons/Icons_houseplaces.png")
+							.replace("{ICONPLACE}","style/img/icons/icon_places.png").replace("{PLACEADDRESS}",item.pla_address)
+							.replace("{ICONTEL}","style/img/icons/icon_telepho.png").replace("{TEL}",item.pla_telephone1)
+							.replace("{WEBSITEIMG}","style/img/icons/icon_places.png").replace("{WEBSITE}",item.pla_web).replace("{REVIEW}","REVIEW")
+							.replace("{IMGREVIEW}","style/img/icons/icon_status.png");
+						}
+						document.getElementById('box-list').innerHTML = Activity;
+						
+						var tamanho = data['tags'].length;
+						var categorias = '';
+						
+						for(x = 0; x < tamanho; x++){
+							
+							categorias += data['tags'][x]['plt_tag']+' ';
+							
+						}
+						document.getElementById('tags').innerHTML = categorias;
+						
+						var tamanho = data['reviews'].length;
+						var comments = '';
+						
+							for(x = 0; x < tamanho; x++){
+								var item = data['reviews'][x];
+								var star = data['reviews'][x]['rating'];
+								comments += '<div class="cmt-userphoto">'+
+												'<img class="userphoto" src='+item.usp_photo+' />'+
+												'<input type="hidden" id="placeid" value='+item.pla_id+'>'+
+											'</div>'+
+											'<div class="user-name">'+item.usp_firstname+' '+item.usp_lastname+
+												'<div class="rating-user">';
+												for(i = 0; i < star; i++){
+													comments += '<img src="style/img/icons/icon_set_on_small.png"/>';
+												}
+												comments += '</div>';
+												if(item.userlogged == item.acc_id){
+													comments += '<div class="delete-message-user">'+
+														'<img src="style/img/icons/close.png" id="icon-close" item='+item.rev_pla+'></div>'+
+														'<div class="id-place-comment" id="place-id-comment">'+item.rev_pla+'</div>';
+												}
+												comments += '</div>'+
+												'<div class="user-description-place">'+item.rev_msg+'</div>'+
+											'</div>'+
+											'<hr style="width: 495px !important; margin-left: -10px !important"></hr><br/>';
+							
+							}
+						document.getElementById('cmt-view').innerHTML = comments;
+						
+						$('.delete-message-user').click(function(){
+	        				var params = {
+                    			url: service.getBaseUrl()+'deleteReview.php',
+			                    global: false,
+                    			type: "POST",
+                    			data: {
+                        			"comment" : $(this).siblings('.id-place-comment').text()
+                    			},
+                    			dataType: "json",
+                    			async: true,
+                    			success: function(data) {
+                        			history.go(0);
+                    			},
+                    			error: function(data) {
+                       				wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                    			}
+                			};
+                			wtd.alert.showConfirm("Are you sure?");
+                				$('#alert-confirm').click( function(){
+                    				$.ajax(params);
+                			});
+						});
+						
+               },
+               error: function(data) {
+               		alert('This place was wrong information, please, contact the administrator');
+               }
+         };
+         $.ajax(params);
+	},
+	getPid: function(page){
+		var params = {
+               url: service.getBaseUrl()+"placeInformations.php",
+               global: false,
+               type: "POST",
+               data: {
+               		pid : page	
+               },
+               dataType: "json",
+               async: false,
+			   success: function(data) {
+               			var PhotoProfile = "";
+		
+						for(x = 0; x < data['placephoto'].length; x++){
+							var item = data['placephoto'][x];
+
+							PhotoProfile += template.imageProfile.replace("{IMG}",item.pla_photo).replace("{NAME}",item.pla_name);
+						}	
+						document.getElementById('box-img-profile').innerHTML = PhotoProfile;
+						
+               },
+               error: function(data) {
+               		alert('Get pid');
+               }
+         };
+         $.ajax(params);
+	},
+	render: function(){
+		document.getElementById('content-right-top-place').style.display = "none";
+		//document.getElementById('box-list').innerHTML = 
+		//.replace("{REVIEW}","REVIEW").replace("{IMGREVIEW}","style/img/icons/icon_status.png").replace("{USERPHOTO}","style/img/wild.jpg")
+		//.replace("{USERNAME}","Nome do usuario").replace("{STARS}","style/img/icons/icon_set_on_small.png").replace("{CLOSE}","style/img/icons/close.png")
+		//.replace("{MSG}","Foda");	
+		document.getElementById('box-advertising').innerHTML = template.componentAdvertising.replace("{ADV}",template.advertising.replace("{IMG}","style/img/wild.jpg"));	
+							
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

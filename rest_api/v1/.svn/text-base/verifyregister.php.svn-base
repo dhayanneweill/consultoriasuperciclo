@@ -1,0 +1,114 @@
+<?php
+//Raw protection
+
+require_once 'class.phpmailer.php';
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+  //Beggining on the validations
+  $data = $_POST['data'];
+  if ($data["type"] == 1) {
+    $result = $db->select_one("SELECT acc_username FROM useraccount WHERE acc_username LIKE '".$data["username"]."' ");
+    if ($result != "") {
+      die("ALREADYEXISTS");
+    } else {
+      die("OK");
+    }
+  }
+  else {
+    $username = $data["username"];
+    $password = $data["password"];
+    $firstname = $data["firstname"];
+    $lastname = $data["lastname"];
+    $email = $data["email"];
+    $country = $data["country"];
+    $city = $data["city"];
+    $birthdate = $data["birthdate"];
+    $preferences = $data["preferences"];
+    $gender = $data["gender"];
+    if (!$username || !$password || !$firstname || !$lastname || !$email || !$country || !$city || !$birthdate || !$preferences) {
+      die("EMPTYFIELDS");
+    }
+    $db->begin();
+    //Valida username novamente
+    $result = $db->select_one("SELECT acc_username FROM useraccount WHERE acc_username LIKE '".$data["username"]."' ");
+    if ($result != "") {
+      die("ERROR");
+    } elseif (!check_email_address($email)) {
+      die("ERROR");
+    }
+    $result = $db->select_one("SELECT printable_name FROM country WHERE iso = '".$country."'");
+    if ($result == "" || !$result) {
+      die("ERROR");
+    }
+    if ($db->select_one("SELECT acc_email FROM useraccount WHERE acc_email = '$email'")) {
+      die("ERROR");
+    }
+    $key = createRandomKey(20);
+    while ($db->select_one("SELECT acc_key FROM useraccount WHERE acc_key = ".$key)) {
+        $key = createRandomKey(20);  
+    }
+    
+    $result1 = $db->insert_sql("INSERT INTO `useraccount` (`acc_username` ,`acc_password` ,`acc_email`, `acc_verificationkey`, `acc_status`)VALUES ('".$username."', '".$password."', '".$email."', '".$key."','Unverified');");
+	$acc_id = $result1;
+    $result2 = $db->insert_sql("INSERT INTO `userprofile` (`acc_id`, `usp_firstname` ,`usp_lastname`, `usp_gender`, `usp_birthdate`, `usp_city`, `usp_country`)VALUES ('".$result1."', '".$firstname."', '".$lastname."', '".$gender."', '".$birthdate."', '".$city."', '".$country."');");
+	$result4 = $db->insert_sql("INSERT INTO `privacyrelationshipuser` (`acc_id`, `id_relationship`, `prs_privacy`)VALUES('".$acc_id."','1','friends-only')");
+	$result5 = $db->insert_sql("INSERT INTO `privacysettings` (`acc_id`, `prv_visibility`, `prv_description`,`prv_profile_photo`,
+	`prv_feed`,`prv_address`,`prv_cell`,`prv_mail`,`prv_website`,`prv_places`)VALUES('".$acc_id."','all-people','all-people','all-people',
+		'all-people','all-people','all-people','all-people','all-people','all-people')");
+    $i = 0;
+    $values = "";
+    while ($i < sizeof($preferences)) {
+      //if (!isset($preferences[$i]["stars"])) { $preferences[$i]["stars"] = Array(); }
+      //while ($j < sizeof($preferences[$i]["stars"])) {
+        $values .= "('".$result1."', '". $preferences[$i]["categoryid"] ."', '".$preferences[$i]["rating"]."')";        
+        if ($i < (sizeof($preferences) - 1)) { $values .= ", "; }
+      //}
+      $i++;
+    }
+    
+    //Send Email
+    //inicio para enviar email
+  	 $mail = new PHPMailer();
+//   
+  	 $mail->IsSMTP();
+  	 $mail->SMTPSecure = "tls"; // set mailer to use SMTP
+  	 $mail->Host = MailHost();  // specify main and backup server
+  	 $mail->SMTPAuth = true; // turn on SMTP authentication
+  	 $mail->Username = MailUser();  // SMTP username
+  	 $mail->Password = MailPasswd(); // SMTP password
+//   
+  	 $mail->From = "whatoodo@whatoodo.com";
+  	 $mail->FromName = "Validation key";
+  	 $mail->AddAddress($email);
+//   
+  	 $mail->Subject = "Whatoodo validation key";
+  	 $mail->Body    = "Hi ".$username."\n\nTo active your account click in this link: http://www.whatoodo.com/verify.php?key=".$key;
+//   
+  	 if(!$mail->Send()) {
+     		 echo "Message could not be sent. <p>";
+     		 echo "Mailer Error: " . $mail->ErrorInfo;
+     		 exit;
+  	 }	
+    //
+    
+    if (substr($values, -2) == ", ") { $values = substr($values, 0, sizeof($values) - 3); }
+    $result3 = $db->insert_sql("INSERT INTO `userpreferences` (`acc_id` , `cat_id` , `pre_rating`)VALUES ".$values.";");
+    //$db->print_last_query();
+    if ($result1 && $result2 && $result3) {
+      $db->commit();
+      if (isset($_SESSION['registermail'])) {
+          unset($_SESSION['registermail']);
+      }
+      die("OK");
+    } else {
+      $db->rollback();
+      die("ERROR");
+    }
+  }
+?>

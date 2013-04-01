@@ -1,0 +1,41 @@
+<?php
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+$place  =  mysql_real_escape_string($POST_place);
+
+$db->begin();
+$result = $db->select("SELECT * FROM place WHERE acc_id = '".$_SESSION['loggeduser']['id']."' AND pla_id = '".$place."' ");
+$result = $db->get_row($result);
+
+if($result['pla_status'] == "Active"){
+	$status = $db->update_sql("UPDATE place SET pla_status = 'Inactive'
+                           WHERE (acc_id = '".$_SESSION['loggeduser']['id']."' AND pla_id = '".$place."')");
+}else{
+	$status = $db->update_sql("UPDATE place SET pla_status = 'Active'
+                           WHERE (acc_id = '".$_SESSION['loggeduser']['id']."' AND pla_id = '".$place."')");						   
+}
+
+
+if ($status) {
+	$db->commit(); 
+	die(json_encode(Array("status" => "OK")));
+} else {
+	$db->rollback();
+	die(json_encode(Array("status" => "ERROR")));
+}
+
+
+?>

@@ -1,0 +1,42 @@
+<?php
+
+
+
+include_once 'config.php';
+include_once 'query.php';
+include_once 'utils.php';
+include_once 'ftp.php';
+
+session_start();
+
+$db = new db_class();
+if (!$db->connect($CONFIG_host, $CONFIG_user, $CONFIG_pass, $CONFIG_db)) {
+	$db->print_last_error();
+}
+if (!$db->select_db()){
+	die("Banco de dados não encontrado!");
+}
+
+$friend = $_POST['uid'];
+
+$result = $db->select("SELECT userprofile.acc_id, userprofile.usp_photo, userprofile.usp_firstname, userprofile.usp_lastname
+                               FROM userfriends,userprofile
+                               WHERE userfriends.usf_status = 'Accepted'
+                               AND userfriends.acc_id = '".$friend."' 
+                               AND userfriends.usf_id = userprofile.acc_id");
+                               
+while($row = $db->get_row($result)){
+    $row['usp_photo'] = urlimage($row['usp_photo'], "user");
+	$userphoto = $row['usp_photo'];
+	$name = $row['usp_firstname'].' '.$row['usp_lastname'];
+	$valores .= '{"userphoto":"'.$userphoto.'","username":"'.$name.'","id":"'.$row['acc_id'].'"},';    
+}
+
+$valores = substr($valores,0,-2);
+$valores .= '}' ;                    
+                               
+?>
+{
+"friendForFriend": [<?php echo $valores; ?>]
+}
+

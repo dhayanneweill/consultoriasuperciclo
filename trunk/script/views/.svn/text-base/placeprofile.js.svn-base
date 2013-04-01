@@ -1,0 +1,483 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.placeprofile = {
+	init: function(){
+		if (whatoodo.user != null && whatoodo.user != 'undefined') {
+			document.getElementById('placeprofile').innerHTML = template.content003;
+		
+			whatoodo.placeprofile.getPid(GET["pid"]);
+        	whatoodo.placeprofile.getActivity(GET["pid"]);
+        	whatoodo.placeprofile.sharePlace(GET["pid"]);
+        	whatoodo.placeprofile.fanPlace(GET["pid"]);
+        	whatoodo.placeprofile.renderTimeline(GET["pid"], 4);
+        
+			whatoodo.placeprofile.bind();
+			service.getSuggestion(function(data) {
+				whatoodo.placeprofile.cache = data;
+				whatoodo.placeprofile.render(data);
+			}, function() {
+				//alert("erro");
+			});
+		}else{
+			lib.views.set('home', {}, whatoodo);
+		}
+		
+	},
+	bind: function(){
+		$('.rating').each( function() {
+                $(this).ratings(5).bind('ratingchanged', function(event, data) {
+                    $(this).attr("rate", data.rating);
+                });
+            });
+        	$('.initial-rate').each( function() {
+                $(this).ratings(5).bind('ratingchanged', function(event, data) {
+                    $(this).attr("rate", data.rating);
+                });
+            });	
+		$('#About').click(function (){
+			//alert('Fui clicado');
+		});
+		$('#Promotions').click(function (){
+			//alert('Tbm Fui clicado');
+		});
+		whatoodo.placeprofile.writeReview(GET["pid"]);
+	},
+	writeReview: function(id){
+		$('#bt-confirm-review').click(function(){
+		//TODO try to make this code like our own architeture and not this jquery ajax	
+			var params = {
+                    url: service.getBaseUrl()+"addReview.php",
+                    global: false,
+                    type: "POST",
+                    data: {
+                    	description : $('#dsc-area').val(),
+					    rating : $('#ratings').attr('rate'),
+					    id : id
+                	 },
+                     dataType: "json",
+                     async: false,
+                     success: function(data) {
+                     		history.go(0);
+                     },
+                     error: function(data) {
+                     	alert('Confirm Review');
+                     }
+              };
+              $.ajax(params);		
+		});
+	},
+	getActivity: function(page){
+		var params = {
+               url: service.getBaseUrl()+"getActivity.php",
+               global: false,
+               type: "POST",
+               data: {
+               		pid : page	
+               },
+               dataType: "json",
+               async: false,
+			   success: function(data) {
+               			var Activity = "";
+						
+						for(x = 0; x < 1; x++){
+							
+							var item = data['place'][x];
+														
+							Activity += template.PlaceActivity.replace("{ACTIVITY}","Recent Activity")
+							.replace("{SHARINGTEXT}","Sharing: ").replace("{ABOUTTEXT}","About: ").replace("{ICONSTATUS}","style/img/icons/icon_status.png")
+							.replace("{PROMOTIONSTEXT}","Promotions: ").replace("{ICONMONEY}","style/img/icons/white_money_icon_b.png")
+							.replace("{ARROWUP}","style/img/icons/arrow_up.png").replace("{REVIEW}","WRITE A REVIEW").replace("{DESCRIPTION}","PLACE DESCRIPTION")
+							.replace("{IMGDESCRIPTION}","style/img/icons/icon_status.png").replace("{PLACEDESCRIPTION}",item.pla_description)
+							.replace("{INFO}","PLACE INFO").replace("{IMGINFO}","style/img/icons/Icons_houseplaces.png")
+							.replace("{ICONPLACE}","style/img/icons/icon_places.png").replace("{PLACEADDRESS}",item.pla_address)
+							.replace("{ICONTEL}","style/img/icons/icon_telepho.png").replace("{TEL}",item.pla_telephone1)
+							.replace("{WEBSITEIMG}","style/img/icons/icon_places.png").replace("{WEBSITE}",item.pla_website).replace("{REVIEW}","REVIEW")
+							.replace("{IMGREVIEW}","style/img/icons/icon_status.png");
+						}
+						document.getElementById('box-list').innerHTML = Activity;
+						
+						var tamanho = data['tags'].length;
+						var categorias = '';
+						
+						for(x = 0; x < tamanho; x++){
+							
+							categorias += data['tags'][x]['plt_tag']+' ';
+							
+						}
+						document.getElementById('tags').innerHTML = categorias;
+						
+						var tamanho = data['reviews'].length;
+						var comments = '';
+						
+							for(x = 0; x < tamanho; x++){
+								var item = data['reviews'][x];
+								var star = data['reviews'][x]['rev_rating'];
+								comments += '<div class="cmt-userphoto">'+
+												'<img class="userphoto" src='+item.usp_photo+' />'+
+												'<input type="hidden" id="placeid" value='+item.pla_id+'>'+
+											'</div>'+
+											'<div class="user-name">'+item.usp_firstname+' '+item.usp_lastname+
+												'<div class="rating-user">';
+												for(i = 0; i < star; i++){
+													comments += '<img src="style/img/icons/icon_set_on_small.png"/>';
+												}
+												comments += '</div>';
+												if(item.uid == item.acc_id){
+													comments += '<div class="delete-message-user">'+
+														'<img src="style/img/icons/close.png" id="icon-close" item='+item.rev_pla+'></div>'+
+														'<div class="id-place-comment" id="place-id-comment">'+item.rev_pla+'</div>';
+												}
+												comments += '</div>'+
+												'<div class="user-description-place">'+item.rev_msg+'</div>'+
+											'</div>'+
+											'<hr style="width: 495px !important; margin-left: -10px !important"></hr><br/>';
+							
+							}
+						document.getElementById('cmt-view').innerHTML = comments;
+						
+						$('.delete-message-user').click(function(){
+	        				var params = {
+                    			url: service.getBaseUrl()+'deleteReview.php',
+			                    global: false,
+                    			type: "POST",
+                    			data: {
+                        			"comment" : $(this).siblings('.id-place-comment').text()
+                    			},
+                    			dataType: "json",
+                    			async: true,
+                    			success: function(data) {
+                        			history.go(0);
+                    			},
+                    			error: function(data) {
+                       				wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                    			}
+                			};
+                			wtd.alert.showConfirm("Are you sure?");
+                				$('#alert-confirm').click( function(){
+                    				$.ajax(params);
+                			});
+						});
+						
+               },
+               error: function(data) {
+               		alert('This place was wrong information, please, contact the administrator');
+               }
+         };
+         $.ajax(params);
+	},
+	getPid: function(page){
+		var params = {
+               url: service.getBaseUrl()+"placeInformations.php",
+               global: false,
+               type: "POST",
+               data: {
+               		pid : page	
+               },
+               dataType: "json",
+               async: false,
+			   success: function(data) {
+               			var PhotoProfile = "";
+						var Recommend = "";
+						var Rate = "";
+						
+						for(x = 0; x < data['placephoto'].length; x++){
+							var item = data['placephoto'][x];
+							Recommend += template.componentRecommendPlace.replace("{RECOMMEND}","Recommend this place ");
+							Rate += template.componentRatePlace.replace("{RATE}","Rate this place: "); 
+							PhotoProfile += template.placeImage.replace("{IMG}",item.pla_photo).replace("{NAME}",item.pla_name);	
+						}	
+						document.getElementById('box-img-profile').innerHTML = PhotoProfile;
+						document.getElementById('recommend-place').innerHTML = Recommend;
+						document.getElementById('rate-this-place').innerHTML = Rate;
+						$('#ratings').click(function (){
+							var params = {
+                    			url: service.getBaseUrl()+"ratingPlace.php",
+                    			global: false,
+                    			type: "POST",
+                    			data: {
+					    			rating : $('#ratings').attr('rate'),
+					    			id : page
+                	 			},
+                     			dataType: "json",
+                     			async: false,
+                     			success: function(data) {
+                     				history.go(0);
+                     			},
+                     			error: function(data) {
+                     				alert('Confirm Review');
+                     			}
+              				};
+              				$.ajax(params);
+						});
+						
+						var Menu = "";
+						
+						for(x = 0; x < data['placephoto'].length; x++){
+							
+							var item = data['placephoto'][x];
+							var menu = data['fanplace'];
+							var liked = data['numfans'];
+							var qntEvent = data['events'];
+							
+							if(menu.friend != 'no'){
+								Menu += '<div class="component-menu-profile">'+
+											'<a class="nofans" href="#" id="nofans">'+liked.fans+' Fans</a>'+
+										'</div>';
+							}else{
+								Menu += '<div class="component-menu-profile">'+
+											'<a class="fans" href="#" id="fans">'+liked.fans+' Fans</a>'+
+										'</div>';
+							}
+							 if(item.userLogged == item.acc_id){
+								Menu += '<div class="component-menu-profile">'+
+											'<div class="admin-menu">'+
+												'<div class="admin-text">Place Admin</div>'+
+											'</div>'+
+											'<a class="editplace" href="index.php?page=editplace&pid='+page+'" id="place">Edit Place</a>'+
+											'<a class="add-event" href="index.php?page=addeventPlace&pid='+page+'" id="add-event">Add Event</a>'+
+											'<a class="check-event" href="#" id="check-event">Check Event</a>'+
+											'<a class="change-photo" href="index.php?page=changeplacephoto&pid='+page+'" id="change-photo">Change Photo</a>'+
+										'</div>';
+							}
+						
+						document.getElementById('box-menu-profile').innerHTML = Menu;
+					}
+               },
+               error: function(data) {
+               		alert('Get pid');
+               }
+         };
+         $.ajax(params);
+	},
+	sharePlace: function(pid){
+		 //Render Share place
+         $('.share').click(function (){
+			$('#share-place').show();
+			var params = {
+                url: service.getBaseUrl()+"Shareplace.php",
+                global: false,
+                type: "POST",
+                dataType: "json",
+                async: true,
+                data: {
+               		pid : pid	
+               	},
+                success: function(data) {
+                	for(x = 0; x < 1; x++){
+                				var item = data['user'][x];
+                				var dataplace = data['place'][x];
+                				
+								$('#share-place').children().html("<div class='up'>"+
+																	"Recommend this Place"+
+																"</div>"+
+																"<div class='user-info'>"+
+																	'<img src="'+item.usp_photo+'" />'+
+																'<div class="user-name-share">'+
+																	'By '+item.usp_firstname+' '+item.usp_lastname+
+																'</div>'+
+																'<div class="place-photo">'+
+																	'<img src="'+dataplace.pla_photo+'" />'+
+																	'<div class="place-description-share">'+
+																		' '+dataplace.pla_description+
+																	'</div>'+
+																'</div>'+
+																'<div class="personal-message-share">'+
+																	'<label>Personal Message</label>'+
+																	'<textarea id="msg-user-place"></textarea>'+
+																'</div>'+
+																'<div class="bts-confirm">'+
+																	'<div class="button red bt-request-cancel" id="bt-share-place">Cancel</div>'+
+																	'<div class="button bt-request-confirm" id="bt-share-place-confirm">Recommend</div>'+
+																'</div>');
+						}
+						$('#bt-share-place').click(function (){
+        					$('#share-place').hide();
+        				});
+        				$('#bt-share-place-confirm').click(function (){
+        					var params = {
+                    			url: service.getBaseUrl()+"SharePlaceNews.php",
+                    			global: false,
+                    			type: "POST",
+                    			data: {	
+    								place : pid,
+    								msg: $('#msg-user-place').val()
+                    			},
+                    			dataType: "json",
+                    			async: true,
+                    			success: function(data) {
+                    				wtd.alert.hideLoader();
+                    				wtd.alert.showMessage("This place was shared for you");
+                    				$('#share-place').hide();
+                    			},
+                    			error: function(data) {
+                        			$('#message-post-loader').remove();
+                        			wtd.alert.showMessage("Cannot connect to the server. Please try again later!");
+                    			}
+                			};
+    						wtd.alert.showLoader();
+                    		$.ajax(params);
+        				});
+                },
+                error: function(data) {
+                    wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                }
+            };
+            $.ajax(params);
+        });
+	},
+	fanPlace: function(pid){
+		 $('#fans').click(function (){
+		 		var params = {
+                url: service.getBaseUrl()+"likePlace.php",
+                global: false,
+                type: "POST",
+                dataType: "json",
+                async: true,
+                data: {
+               		pid : pid	
+               	},
+                success: function(data) {
+                	wtd.alert.showMessage("Now you are a fan of this place");
+                	history.go(0);
+                },
+                error: function(data) {
+                    wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                }
+            };
+            $.ajax(params);
+		 });
+		 $('#nofans').click(function (){
+		 		var params = {
+                url: service.getBaseUrl()+"dislikePlace.php",
+                global: false,
+                type: "POST",
+                dataType: "json",
+                async: true,
+                data: {
+               		pid : pid	
+               	},
+                success: function(data) {
+                	wtd.alert.showMessage("You dislike this place");
+                	history.go(0);
+                },
+                error: function(data) {
+                    wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                }
+            };
+            $.ajax(params);
+		 });
+	},
+	renderTimeline: function(data, itens){
+		var params = {
+                url: service.getBaseUrl()+"getEventsPlace.php",
+                global: false,
+                type: "POST",
+                dataType: "json",
+                async: true,
+                data: {
+               		pid : data
+               	},
+                success: function(data) {
+                	//itemsqty means how many places will apear in the timeline
+					var weekday = new Array(7);
+					weekday[0] = "SUNDAY";
+					weekday[1] = "MONDAY";
+					weekday[2] = "TUESDAY";
+					weekday[3] = "WEDNESDAY";
+					weekday[4] = "THURSDAY";
+					weekday[5] = "FRIDAY";
+					weekday[6] = "SATURDAY";
+	
+					var month = new Array(12);
+					month[1] = "Jan";
+					month[2] = "Feb";
+					month[3] = "Mar";
+					month[4] = "Apr";
+					month[5] = "May";
+					month[6] = "Jun";
+					month[7] = "Jul";
+					month[8] = "Aug";
+					month[9] = "Sep";
+					month[10] = "Oct";
+					month[11] = "Nov";
+					month[12] = "Dec";
+					var tamanho = data['eventstimeLine'].length;
+					var date = new Date();
+					pad(date.getDate(), 2) + '/' + pad(date.getMonth(), 2) + '/' + date.getFullYear();
+					
+					if(tamanho >= 1){
+						var listTimeline = "";
+						for( x = 0; x < 4; x++) {
+							var item = data['eventstimeLine'][x];
+							date.setDate(date.getDate()+x);
+						//alert(date.getDay());
+						
+							listTimeline += template.componentPlaceTimeline.replace("{IMG}",item.eve_photo)
+							.replace("{SEMANA}",item.eve_when).replace("{NAME}",item.eve_name).replace("{COUNT}",item.eve_go+' people')
+							.replace("{VAL}","R$ "+item.eve_cost).replace("{EVEID}",item.eve_id).replace("{ID}",x).replace("{ID}",x).replace("{ID}",x);
+						}
+						document.getElementById('timeline').innerHTML = listTimeline;
+						lib.events.add("timeline","onmouseover",function(e){
+							 var tamanho = data['event'].length;
+							 var value = lib.dom.attr(e.target, 'value');
+							 if(value){
+							 	for(x = 0; x < tamanho; x++){
+									document.getElementById('timeline-item-time'+x).className = "timeline-item";				 
+				 					document.getElementById('timeline-item-' + value).className = "timeline-item-on";
+				 				}	
+			 				}
+						});
+					}else{
+						document.getElementById('content-right-top-place').style.display = "none";
+					}					
+                },
+                error: function(data) {
+                    wtd.alert.showMessage("Cannot connect to the server. Please check out your internet connection.");
+                }
+            };
+            $.ajax(params);
+	},
+	render: function(){
+		//document.getElementById('box-list').innerHTML = 
+		//.replace("{REVIEW}","REVIEW").replace("{IMGREVIEW}","style/img/icons/icon_status.png").replace("{USERPHOTO}","style/img/wild.jpg")
+		//.replace("{USERNAME}","Nome do usuario").replace("{STARS}","style/img/icons/icon_set_on_small.png").replace("{CLOSE}","style/img/icons/close.png")
+		//.replace("{MSG}","Foda");
+		
+		whatoodo.placeprofile.renderSuggestion();
+		document.getElementById('box-advertising').innerHTML = template.componentAdvertising.replace("{ADV}",template.advertising.replace("{IMG}","style/img/wild.jpg"));	
+							
+	},
+	renderSuggestion : function() {
+		var data = whatoodo.placeprofile.cache.splice(0, 1);
+		data = data[0];
+		var suggestionHTML = "";
+		
+		
+		if( typeof (data) != 'undefined') {
+			suggestionHTML = template.suggestions.replace("{FRIENDID}",data['acc_id'])
+			.replace("{IMG}", data['usp_photo'])
+			.replace("{FRIENDID}",data['acc_id'])
+			.replace("{NAME}",data['usp_firstname']+" "+data['usp_lastname'])
+			.replace("{TEXT}","mutual friends")
+			.replace("{MUTUALFRIENDS}",data['mutual_friends'])
+			.replace("{ACTIONLINK}",data['acc_id'])
+			.replace("{ACTION}",data['action']);
+			document.getElementById('box-suggestions').innerHTML = template.componentSuggestions.replace("{SUGG}", suggestionHTML);
+			//$('#suggestion-'+i).children('.suggestions-message').hide();
+			$('#suggestion-close').click(function() {
+				
+				//$('#suggestion-'+i).fadeOut('fast', function() {
+					//$('#suggestion-'+i).html('<div class="suggestions-message"></div>');
+					//$('#suggestion-'+i).show();
+					whatoodo.placeprofile.renderSuggestion();
+				//});
+			});
+		} else {
+			document.getElementById('suggestions-container').innerHTML = '<div class="suggestions-message">No suggestions for now! Please try again later.</div>';
+			//$('#suggestion-'+i).html('<div class="suggestions-message">No suggestions for now! Please try again later.</div>');
+		}
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

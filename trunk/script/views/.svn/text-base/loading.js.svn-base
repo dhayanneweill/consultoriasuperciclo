@@ -1,0 +1,14 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.loading = {
+	init: function(){
+		document.getElementById('loading').innerHTML = template.componentLoading;
+	},
+	bind: function(){
+	},
+	render: function(data){
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

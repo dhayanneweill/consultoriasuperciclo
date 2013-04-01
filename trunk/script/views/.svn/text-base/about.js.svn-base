@@ -1,0 +1,51 @@
+var whatoodo = window.whatoodo || {};
+
+whatoodo.about = {
+	init: function(){
+		document.getElementById('about').innerHTML = template.content002;
+    	
+		whatoodo.about.render();
+		whatoodo.about.bind();
+	},
+	bind: function(){
+	},
+	render: function(data){
+	    document.getElementById('content-right-top').style.display = "none";
+	    
+	    document.getElementById('about').innerHTML = template.componentAbout.replace("{TITLE}","Sobre o Whatoodo")
+	    .replace("{PARAM01}","O Whatoodo é uma ferramenta social que ajuda voce a encontrar as melhores opções de diversão e entretenimento,"+
+	    	 "baseada nos seus gostos e nas oportunidades da cidade onde voce está. Ele funciona no seu computador e também no celular."+
+			 "Voce vai encontrar no Whatoodo: festas, bares, restaurantes, cinema, tv, eventos ligados ao esporte, programação cultural,"+
+			 "museus, mostras, colóquios, parques, clubes e tudo que tem a ver com diversão e entretenimento. Voce não vai encontrar no"+
+			 "Whatoodo: eventos corporativos, reuniões de vendas, reuniões empresariais, atividades escolares e de estudo, pesquisas"+
+			 "científicas, pesquisas de opinião e outros afins. Ao usar o Whatoodo, de uma forma direta e simples, voce encontrará os"+
+			 "melhores lugares para ir, sozinho ou acompanhado dos amigos ou namorada(o): festas, exposições culturais, shows, bares,"+
+			 "restaurantes e todas as outras possibilidades de diversão da cidade onde está. O grande diferencial do Whatoodo é que voce não"+
+			 "fica recebendo aquele monte de ofertas de diversão de coisas que odeia. Através de um sistema inteligente, nossa ferramenta"+
+			 "apresenta para voce somente as melhores oportunidades de diversão, segundo aquele que mais entende dos seus gostos: voce mesmo."+
+ 			 "Diversão no Whatoodo é considerada a partir de um conceito amplo. Além de festas, eventos, bares e restaurantes, jogos em arenas"+
+ 			 "e outros, o Whatoodo também irá te oferecer opções de “ir às compras”, ver televisão (programas que voce gosta), jogar cartas"+
+ 			 "com os amigos, dentre outras formas de diversão.").replace("{TITLE02}","A diversão encontra voce")
+ 		.replace("{PARAM02}","No Whatoodo, ao invés de voce ficar fazendo buscas infindáveis, a diversão é que busca voce. Mas somente aquelas"+ 
+ 			 "que voce tem alta probabilidade de aceitar. Além de encontrar oportunidades de diversão facilmente, voce poderá também convidar"+
+ 			 "amigos a ir com voce, também de forma simples e direta, sem excesso de mensagens e sem confusão.").replace("{TITLE03}","Voce também será convidado")
+ 		.replace("{PARAM03}","Além de convidar seus amigos, eles também irão convidar voce. Com isso, o Whatoodo irá superfacilitar a interação"+
+ 		 	 "entre os melhores lugares para se divertir, voce e seus amigos. Em cada lugar, voce poderá saber o que as pessoas que já o"+
+ 		 	 "frequentaram estão comentando. Isso irá ajudar voce a fazer sua decisão final. Convide seus amigos a participar do Whatoodo."+
+ 		 	 "Assim, o trabalho de encontrar o melhor lugar para ir, junto com as melhores companhias, estará somente a alguns cliques de voce.")
+ 		 .replace("{TITLE04}","WhatsUP").replace("{PARAM04}","O botão WhatsUP mostra para voce as melhores opções nas próximas horas."+
+ 		  	 "Ele está configurado para te mostrar o que há de melhor para fazer nas próximas 4 horas, mas voce pode escolher o período."+
+ 		  	 "Se quer saber o que está prestes a rolar, escolha as próximas 2 horas. Se tem mais tempo, escolha entre 6 ou 8 horas.")
+ 		  .replace("{TITLE05}","Divulgue sua oferta de diversão").replace("{PARAM05}","Se voce tem uma empresa, o Whatoodo é o melhor lugar"+ 
+ 		  	 "para voce expor sua oferta, seja ela um restaurante, uma balada, uma festa, um rodeio ou qualquer outra coisa considerada"+
+ 		  	 "diversão. Isso porque no Whatoodo, o público que acessa sua oferta, o faz no momento mais oportuno: exatamente quando ele está"+
+ 		  	 "desejando consumir diversão ou entretenimento. Sua oferta aparece sem nenhum custo para sua empresa. Voce ganha uma página"+
+ 		  	 "exclusiva com fotos, informações de como chegar, atrações, dentre outros, para sua empresa ou evento e tem a chance de divulgar"+
+ 		  	 "para as pessoas certas.").replace("{TITLE06}","Publicidade").replace("{PARAM06}","Quer anunciar sua empresa ou evento de forma"+ 
+ 		  	 "especial? Contate-nos no email marketing@whatoodo.com").replace("{TITLE07}","Contato").replace("{PARAM07}","Sugestões, dúvidas,"+ 
+ 		  	 "críticas ou elogios devem ser encaminhados ao email:").replace("{CONTATO}","contato@whatoodo.com");
+	},
+	destroy: function(){
+	}	
+};
+window.whatoodo = whatoodo;

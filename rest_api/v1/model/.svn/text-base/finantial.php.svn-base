@@ -1,0 +1,32 @@
+<?php
+class Finantial {
+	public static function getCost($id) {
+		$db = Api::getDb();
+		
+		$result =  $db->select_one("SELECT cos_average
+								FROM cost
+								WHERE cos_id = $id
+								LIMIT 1");
+		 
+		return $result;
+	}
+	public static function getPayMethods($id) {
+		$db = Api::getDb();
+		
+		$return = Array();
+		// TODO
+		$result =  $db->select("SELECT *
+								FROM placepaymethod
+								WHERE pla_id = $id");
+		while($row = $db->get_row($result)) {
+			
+		} 
+		return $return;
+	}
+	public static function process($row, $data) {
+		$return = Array();
+		$return['image'] = $row['usp_photo'];
+		return $return;
+	}
+}
+?>

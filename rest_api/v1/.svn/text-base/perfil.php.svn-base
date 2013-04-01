@@ -1,0 +1,7 @@
+<?php 
+	$perfil = 'perfil 01';
+	$perfil02 = 'perfil 02';
+?>
+
+
+{"profile":[{"perfilteste":"<?php echo $perfil; ?>"},{"perfilteste":"<?php echo $perfil02; ?>"},{"prf":"teste"}]}
