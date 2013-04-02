@@ -18,6 +18,7 @@
 <script type="text/javascript" language="javascript" src="script/i18n.js"></script>
 <script type="text/javascript" language="javascript" src="script/wb.js"></script>  
 <script type="text/javascript" language="javascript" src="script/views/home.js"></script> 
+<script type="text/javascript" language="javascript" src="script/views/contato.js"></script>
 <script type="text/javascript" language="javascript" src="script/views/about.js"></script>
 
 <link rel="stylesheet" href="style/reset.css" type="text/css">
@@ -33,8 +34,8 @@
 <div class="navbar navbar-fixed-top">
       <div class="navbar-inner">
         <div class="container">
-          <a class="brand" href="#">
-            Consultoria Super Ciclo
+          <a class="brand" href="index.php">
+            ConsultoriaSuperCiclo
           </a>
           <ul class="nav">
           </ul>
@@ -45,27 +46,7 @@
               Entrar
             </button>
           </form>
-          <ul class="nav nav-tabs">
-            <li class="active">
-              <a href="#">
-                A Empresa
-              </a>
-            </li>
-            <li class="">
-              <a href="#">
-                Serviços
-              </a>
-            </li>
-            <li class="">
-              <a href="#">
-                Diferencial
-              </a>
-            </li>
-            <li class="">
-              <a href="#">
-                Contato
-              </a>
-            </li>
+          <ul class="nav nav-tabs" id="menuactive">
           </ul>
         </div>
       </div>
@@ -78,6 +59,7 @@
     <div id="container" class="container">
 	  <div id="loading" class="loading" style="display:none;"></div>
 	  <div id="home" class="home" style="display:none;"></div>
+	  <div id="contato" class="contato" style="display:none;"></div>
 	  <div id="about" class="about" style="display:none;"></div>
 	</div>
     

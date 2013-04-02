@@ -1026,6 +1026,7 @@ pre code {
 
 form {
   margin: 0 0 20px;
+  max-width: 480px;
 }
 
 fieldset {
@@ -6131,6 +6132,11 @@ a.badge:focus {
 
 .hero-unit li {
   line-height: 30px;
+}
+
+.hero-unit .img-contact{
+	float: right;
+	margin-right: 200px;
 }
 
 .pull-right {

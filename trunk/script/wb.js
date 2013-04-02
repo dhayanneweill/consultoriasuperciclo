@@ -6,7 +6,7 @@ window.onload = function() {
 };
 var wb = window.wb || {};
 wb = {
-	pageList : ['home','about' ],
+	pageList : ['home','about', 'contato' ],
 	lang : '',
 
 	init : function() {
@@ -32,6 +32,7 @@ wb = {
 		lib.views.hideLoading();
 			
 		wb.bind();
+		
 	},
 	bind : function() {	},
 	getPage : function(page) {
